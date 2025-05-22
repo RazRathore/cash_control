@@ -278,13 +278,13 @@
         </div>
         
         <div class="button-grid">
-            <a href="#" class="dashboard-btn">
+            <a href="{{ url_for('transactions') }}" class="dashboard-btn">
                 <i class="fas fa-exchange-alt"></i>
                 Transactions
                 <span class="badge">Manage all financial transactions</span>
             </a>
             
-            <a href="#" class="dashboard-btn">
+            <a href="{{ url_for('accounts') }}" class="dashboard-btn">
                 <i class="fas fa-wallet"></i>
                 Accounts
                 <span class="badge">View and manage accounts</span>

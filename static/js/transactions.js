@@ -1,5 +1,156 @@
+// Add ripple effect to buttons
+function createRipple(event) {
+    if (!event.currentTarget) return;
+    
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    
+    // Remove any existing ripples
+    const existingRipples = button.getElementsByClassName('ripple');
+    while (existingRipples[0]) {
+        existingRipples[0].remove();
+    }
+    
+    button.appendChild(ripple);
+    
+    // Remove ripple after animation completes
+    setTimeout(() => {
+        if (ripple.parentNode === button) {
+            ripple.remove();
+        }
+    }, 600);
+}
+
 // Transactions Page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // Add ripple effect to the Add Transaction button
+    const addButton = document.getElementById('addTransactionBtn');
+    if (addButton) {
+        addButton.addEventListener('click', createRipple);
+    }
+    
+    // Initialize search functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    let searchTimeout;
+    
+    if (searchInput && searchResults && clearSearchBtn) {
+        // Toggle clear button visibility
+        const toggleClearButton = () => {
+            clearSearchBtn.style.display = searchInput.value.trim() ? 'block' : 'none';
+        };
+        
+        // Clear search input and results
+        const clearSearch = () => {
+            searchInput.value = '';
+            searchInput.focus();
+            searchResults.classList.remove('active');
+            clearSearchBtn.style.display = 'none';
+            // Trigger any additional clear logic here
+        };
+        
+        // Initialize clear button state
+        toggleClearButton();
+        
+        // Handle search input
+        const handleSearch = () => {
+            const query = searchInput.value.trim();
+            clearSearchBtn.style.display = query ? 'block' : 'none';
+            
+            if (query.length > 1) {
+                // Show loading state
+                searchResults.innerHTML = '<div class="search-result-item"><i class="fas fa-spinner fa-spin"></i> Searching transactions...</div>';
+                searchResults.classList.add('active');
+                
+                // Clear previous timeout
+                clearTimeout(searchTimeout);
+                
+                // Set new timeout for debouncing
+                searchTimeout = setTimeout(() => {
+                    // This is a mock response - replace with actual API call
+                    const mockResults = [
+                        { id: 1, name: 'Sample Transaction #1', type: 'credit', amount: 1500, date: '2023-05-22' },
+                        { id: 2, name: 'Sample Transaction #2', type: 'debit', amount: 750, date: '2023-05-21' },
+                        { id: 3, name: 'Sample Payment #3', type: 'credit', amount: 2500, date: '2023-05-20' },
+                    ];
+                    
+                    // Filter mock results based on query
+                    const filteredResults = mockResults.filter(item => 
+                        item.name.toLowerCase().includes(query.toLowerCase()) ||
+                        item.amount.toString().includes(query) ||
+                        item.date.includes(query)
+                    );
+                    
+                    if (filteredResults.length > 0) {
+                        let resultsHTML = '';
+                        filteredResults.forEach(result => {
+                            const icon = result.type === 'credit' ? 'arrow-down' : 'arrow-up';
+                            const amountClass = result.type === 'credit' ? 'credit-amount' : 'debit-amount';
+                            resultsHTML += `
+                                <div class="search-result-item" data-id="${result.id}">
+                                    <i class="fas fa-${icon}"></i>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 500;">${result.name}</div>
+                                        <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                            <small class="text-muted">${new Date(result.date).toLocaleDateString()}</small>
+                                            <small class="${amountClass}" style="font-weight: 600;">₹${result.amount.toLocaleString()}</small>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        });
+                        searchResults.innerHTML = resultsHTML;
+                    } else {
+                        searchResults.innerHTML = `
+                            <div class="search-result-item">
+                                <i class="fas fa-search"></i>
+                                <div>No results found for "${query}"</div>
+                            </div>`;
+                    }
+                }, 500); // 500ms debounce time
+            } else if (query.length === 0) {
+                searchResults.classList.remove('active');
+            } else {
+                searchResults.innerHTML = '<div class="search-result-item"><i class="fas fa-info-circle"></i> Enter at least 2 characters to search</div>';
+                searchResults.classList.add('active');
+            }
+        };
+        
+        // Event listeners
+        searchInput.addEventListener('input', handleSearch);
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.trim().length > 1) {
+                searchResults.classList.add('active');
+            }
+        });
+        
+        clearSearchBtn.addEventListener('click', clearSearch);
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.remove('active');
+            }
+        });
+        
+        // Handle keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchResults.classList.remove('active');
+                searchInput.blur();
+            }
+        });
+    }
+    
     // Initialize date range picker
     const dateRangeInput = document.getElementById('dateRange');
     if (dateRangeInput) {

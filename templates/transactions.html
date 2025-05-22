@@ -30,23 +30,49 @@
         position: absolute;
         background: white;
         width: 100%;
-        max-height: 300px;
+        max-height: 350px;
         overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
         z-index: 1000;
         display: none;
+        margin-top: 5px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.2s ease-out;
+    }
+    
+    .search-results.active {
+        opacity: 1;
+        transform: translateY(0);
+        display: block;
     }
     
     .search-result-item {
-        padding: 10px 15px;
+        padding: 12px 20px;
         cursor: pointer;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #f5f5f5;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        color: #333;
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
     }
     
     .search-result-item:hover {
-        background-color: #f5f5f5;
+        background-color: #f9f9f9;
+        padding-left: 25px;
+    }
+    
+    .search-result-item i {
+        margin-right: 12px;
+        color: #d4af37;
+        width: 20px;
+        text-align: center;
     }
     
     .btn {
@@ -175,18 +201,98 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 20px;">
-    <h1 style="margin-bottom: 25px;">Transactions</h1>
+<div class="container" style="padding: 25px 30px; max-width: 1400px;">
+    <!-- Page Header -->
+    <div class="page-header" style="margin-bottom: 30px; border-bottom: 2px solid #f5f5f5; padding-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 10px;">
+            <div>
+                <h1 style="margin: 0; color: #1a3a5e; font-weight: 700; font-size: 28px; display: flex; align-items: center;">
+                    <i class="fas fa-exchange-alt" style="margin-right: 12px; color: #d4af37; font-size: 1.2em;"></i>
+                    Transaction Management
+                </h1>
+                <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 15px; padding-left: 34px;">
+                    Manage and track all financial transactions efficiently
+                </p>
+            </div>
+            <button id="addTransactionBtn" class="btn" 
+                    style="background: linear-gradient(135deg, #d4af37, #b8860b); 
+                           border: none; 
+                           color: #fff;
+                           padding: 12px 28px; 
+                           font-weight: 600;
+                           font-size: 15px;
+                           border-radius: 6px;
+                           box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+                           transition: all 0.3s ease;
+                           display: inline-flex;
+                           align-items: center;
+                           gap: 8px;
+                           cursor: pointer;
+                           white-space: nowrap;
+                           text-decoration: none;
+                           text-align: center;
+                           vertical-align: middle;
+                           line-height: 1.5;
+                           -webkit-user-select: none;
+                           -moz-user-select: none;
+                           -ms-user-select: none;
+                           user-select: none;
+                           border: 1px solid transparent;
+                           margin: 0;
+                           position: relative;
+                           overflow: hidden;
+                           z-index: 1;">
+                <i class="fas fa-plus-circle" style="font-size: 1.1em;"></i>
+                <span>Add New Transaction</span>
+                <span class="ripple" style="position: absolute; border-radius: 50%; background-color: rgba(255, 255, 255, 0.4); transform: scale(0); animation: ripple 0.6s linear; pointer-events: none;"></span>
+            </button>
+        </div>
+    </div>
     
-    <div class="transaction-actions">
-        <div class="search-container">
-            <input type="text" 
-                   id="searchInput" 
-                   class="search-input" 
-                   placeholder="Search by name..." 
-                   value="{{ search_query }}"
-                   autocomplete="off">
-            <div id="searchResults" class="search-results"></div>
+    <style>
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+        
+        #addTransactionBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+        
+        #addTransactionBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+        }
+        
+        #searchInput:focus {
+            border-color: #d4af37 !important;
+            box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25) !important;
+        }
+    </style>
+    
+    <div class="transaction-actions" style="margin: 30px 0 20px;">
+        <div class="search-container" style="position: relative; max-width: 600px; margin: 0 auto;">
+            <div style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #6c757d; z-index: 10; font-size: 16px;"></i>
+                <input type="text" 
+                       id="searchInput" 
+                       class="form-control" 
+                       placeholder="Search transactions by name, amount, or reference..." 
+                       value="{{ search_query }}"
+                       autocomplete="off"
+                       style="padding: 12px 20px 12px 48px; 
+                              height: 50px; 
+                              border-radius: 8px; 
+                              border: 2px solid #e0e0e0;
+                              font-size: 15px;
+                              transition: all 0.3s ease;
+                              box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+                              background-color: #fff;">
+                <button type="button" id="clearSearch" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #aaa; cursor: pointer; display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="searchResults" class="search-results" style="width: 100%; margin-top: 5px;"></div>
             
             {% if selected_contact %}
             <div class="date-filter">

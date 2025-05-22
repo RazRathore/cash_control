@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Jodhpur Mines Cash Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --dark-gold: #8b6914;
+            --light-gold: #f5d76e;
+            --dark-blue: #0f2c4d;
+            --light-blue: #2c5a8c;
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--secondary-color) !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand i {
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--secondary-color) !important;
+        }
+
+        .nav-link.active {
+            color: var(--secondary-color) !important;
+            font-weight: 600;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.35rem;
+            border-top-left-radius: 10px !important;
+            border-top-right-radius: 10px !important;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: #000;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 10;
+        }
+
+        .search-input {
+            padding-left: 45px;
+            height: 50px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+
+        .search-input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+            outline: none;
+        }
+
+        .search-results {
+            position: absolute;
+            background: white;
+            width: 100%;
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            margin-top: 5px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease-out;
+            display: none;
+        }
+
+        .search-results.active {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            color: #333;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background-color: #f9f9f9;
+            padding-left: 25px;
+        }
+
+        .search-result-item i {
+            margin-right: 12px;
+            color: var(--secondary-color);
+            width: 20px;
+            text-align: center;
+        }
+
+        .credit-amount {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .debit-amount {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">
+                <i class="fas fa-mountain"></i>
+                Jodhpur Mines
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('transactions') }}">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Accounts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Reports</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span class="text-light me-3">Welcome, {{ current_user.name if current_user.is_authenticated else 'User' }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container" style="padding: 25px 30px; max-width: 1400px;">
+        <!-- Page Header -->
+        <div class="page-header" style="margin-bottom: 30px; border-bottom: 2px solid #f5f5f5; padding-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 10px;">
+                <div>
+                    <h1 style="margin: 0; color: #1a3a5e; font-weight: 700; font-size: 28px; display: flex; align-items: center;">
+                        <i class="fas fa-exchange-alt" style="margin-right: 12px; color: #d4af37; font-size: 1.2em;"></i>
+                        Transaction Management
+                    </h1>
+                    <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 15px; padding-left: 34px;">
+                        Manage and track all financial transactions efficiently
+                    </p>
+                </div>
+                <button id="addTransactionBtn" class="btn btn-primary" 
+                        style="position: relative; overflow: hidden;">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Add New Transaction
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="transaction-actions" style="margin: 30px 0 20px;">
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" 
+                       id="searchInput" 
+                       class="form-control search-input" 
+                       placeholder="Search transactions by name, amount, or reference..." 
+                       autocomplete="off">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownMenuLink">
+                        <li><a class="dropdown-item" href="#">Export</a></li>
+                        <li><a class="dropdown-item" href="#">Print</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Refresh</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="transactionsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Sample Data - Replace with actual data from backend -->
+                            <tr>
+                                <td>May 22, 2023</td>
+                                <td>Office Supplies</td>
+                                <td>Expenses</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td class="text-end fw-bold text-danger">-₹1,250.00</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>May 21, 2023</td>
+                                <td>Client Payment</td>
+                                <td>Income</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td class="text-end fw-bold text-success">+₹15,000.00</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- Add more rows as needed -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTransactionModalLabel">Add New Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transactionForm">
+                        <div class="mb-3">
+                            <label for="transactionType" class="form-label">Transaction Type</label>
+                            <select class="form-select" id="transactionType" required>
+                                <option value="" disabled selected>Select type</option>
+                                <option value="income">Income</option>
+                                <option value="expense">Expense</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionAmount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="transactionAmount" placeholder="0.00" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="transactionDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionCategory" class="form-label">Category</label>
+                            <select class="form-select" id="transactionCategory" required>
+                                <option value="" disabled selected>Select category</option>
+                                <option value="salary">Salary</option>
+                                <option value="supplies">Office Supplies</option>
+                                <option value="utilities">Utilities</option>
+                                <option value="rent">Rent</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="transactionDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="transactionDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveTransaction">Save Transaction</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transactionDate').value = today;
+
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        // Add ripple effect to buttons
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            // Remove any existing ripples
+            const existingRipples = button.getElementsByClassName('ripple');
+            while (existingRipples[0]) {
+                existingRipples[0].remove();
+            }
+            
+            button.appendChild(ripple);
+            
+            // Remove ripple after animation completes
+            setTimeout(() => {
+                if (ripple.parentNode === button) {
+                    ripple.remove();
+                }
+            }, 600);
+        }
+
+        // Add ripple effect to the Add Transaction button
+        const addButton = document.getElementById('addTransactionBtn');
+        if (addButton) {
+            addButton.addEventListener('click', function(e) {
+                createRipple(e);
+                // Show modal after ripple effect
+                setTimeout(() => {
+                    const modal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+                    modal.show();
+                }, 200);
+            });
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        let searchTimeout;
+        
+        if (searchInput && searchResults) {
+            // Toggle clear button visibility
+            const toggleClearButton = () => {
+                if (clearSearchBtn) {
+                    clearSearchBtn.style.display = searchInput.value.trim() ? 'block' : 'none';
+                }
+            };
+            
+            // Clear search input and results
+            const clearSearch = () => {
+                searchInput.value = '';
+                searchInput.focus();
+                searchResults.classList.remove('active');
+                if (clearSearchBtn) {
+                    clearSearchBtn.style.display = 'none';
+                }
+            };
+            
+            // Handle search input
+            const handleSearch = () => {
+                const query = searchInput.value.trim();
+                if (clearSearchBtn) {
+                    clearSearchBtn.style.display = query ? 'block' : 'none';
+                }
+                
+                if (query.length > 1) {
+                    // Show loading state
+                    searchResults.innerHTML = '<div class="search-result-item"><i class="fas fa-spinner fa-spin"></i> Searching transactions...</div>';
+                    searchResults.classList.add('active');
+                    
+                    // Clear previous timeout
+                    clearTimeout(searchTimeout);
+                    
+                    // Set new timeout for debouncing
+                    searchTimeout = setTimeout(() => {
+                        // This is a mock response - replace with actual API call
+                        const mockResults = [
+                            { id: 1, name: 'Office Supplies', type: 'expense', amount: 1250, date: '2023-05-22' },
+                            { id: 2, name: 'Client Payment', type: 'income', amount: 15000, date: '2023-05-21' },
+                            { id: 3, name: 'Internet Bill', type: 'expense', amount: 1200, date: '2023-05-20' },
+                        ];
+                        
+                        // Filter mock results based on query
+                        const filteredResults = mockResults.filter(item => 
+                            item.name.toLowerCase().includes(query.toLowerCase()) ||
+                            item.amount.toString().includes(query) ||
+                            item.date.includes(query)
+                        );
+                        
+                        if (filteredResults.length > 0) {
+                            let resultsHTML = '';
+                            filteredResults.forEach(result => {
+                                const icon = result.type === 'income' ? 'arrow-down' : 'arrow-up';
+                                const amountClass = result.type === 'income' ? 'credit-amount' : 'debit-amount';
+                                const amountPrefix = result.type === 'income' ? '+' : '-';
+                                resultsHTML += `
+                                    <div class="search-result-item" data-id="${result.id}">
+                                        <i class="fas fa-${icon}"></i>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 500;">${result.name}</div>
+                                            <div style="display: flex; justify-content: space-between; margin-top: 3px;">
+                                                <small class="text-muted">${new Date(result.date).toLocaleDateString()}</small>
+                                                <small class="${amountClass}" style="font-weight: 600;">${amountPrefix}₹${result.amount.toLocaleString()}</small>
+                                            </div>
+                                        </div>
+                                    </div>`;
+                            });
+                            searchResults.innerHTML = resultsHTML;
+                        } else {
+                            searchResults.innerHTML = `
+                                <div class="search-result-item">
+                                    <i class="fas fa-search"></i>
+                                    <div>No results found for "${query}"</div>
+                                </div>`;
+                        }
+                    }, 500); // 500ms debounce time
+                } else if (query.length === 0) {
+                    searchResults.classList.remove('active');
+                } else {
+                    searchResults.innerHTML = '<div class="search-result-item"><i class="fas fa-info-circle"></i> Enter at least 2 characters to search</div>';
+                    searchResults.classList.add('active');
+                }
+            };
+            
+            // Event listeners
+            searchInput.addEventListener('input', handleSearch);
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length > 1) {
+                    searchResults.classList.add('active');
+                }
+            });
+            
+            if (clearSearchBtn) {
+                clearSearchBtn.addEventListener('click', clearSearch);
+            }
+            
+            // Close search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.remove('active');
+                }
+            });
+            
+            // Handle keyboard navigation
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    searchResults.classList.remove('active');
+                    searchInput.blur();
+                }
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('saveTransaction')?.addEventListener('click', function() {
+            const form = document.getElementById('transactionForm');
+            if (form.checkValidity()) {
+                // Here you would typically send the data to your server
+                const formData = {
+                    type: document.getElementById('transactionType').value,
+                    amount: document.getElementById('transactionAmount').value,
+                    date: document.getElementById('transactionDate').value,
+                    category: document.getElementById('transactionCategory').value,
+                    description: document.getElementById('transactionDescription').value
+                };
+                
+                console.log('Form submitted:', formData);
+                
+                // Show success message
+                alert('Transaction added successfully!');
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
+                modal.hide();
+                
+                // Reset the form
+                form.reset();
+                
+                // Here you would typically refresh the transactions list
+            } else {
+                // If the form is invalid, trigger the browser's native validation
+                form.reportValidity();
+            }
+        });
+    </script>
+</body>
+</html>

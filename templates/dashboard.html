@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Jodhpur Mines Financial System</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
             --primary-color: #1a3a5e;
@@ -255,13 +257,13 @@
         </div>
         
         <div class="button-grid">
-            <a href="#" class="dashboard-btn">
+            <a href="/transactions" class="dashboard-btn">
                 <i class="fas fa-exchange-alt"></i>
                 Transactions
                 <span class="badge">Manage all financial transactions</span>
             </a>
             
-            <a href="#" class="dashboard-btn">
+            <a href="/accounts" class="dashboard-btn" id="accounts-btn">
                 <i class="fas fa-wallet"></i>
                 Accounts
                 <span class="badge">View and manage accounts</span>
@@ -269,7 +271,7 @@
             
             <a href="#" class="dashboard-btn">
                 <i class="fas fa-file-invoice-dollar"></i>
-                Transactions Report
+                Reports
                 <span class="badge">Generate detailed reports</span>
             </a>
         </div>
@@ -278,135 +280,70 @@
     <script>
         // Add animation to buttons
         document.addEventListener('DOMContentLoaded', function() {
+            // Animate buttons on page load
             const buttons = document.querySelectorAll('.dashboard-btn');
             buttons.forEach((button, index) => {
-                button.style.opacity = '0';
-                button.style.transform = 'translateY(20px)';
-                button.style.transition = `all 0.5s ease ${index * 0.1}s`;
+                // Only animate if not already visible
+                if (button.style.opacity !== '1') {
+                    button.style.opacity = '0';
+                    button.style.transform = 'translateY(20px)';
+                    button.style.transition = `all 0.5s ease ${index * 0.1}s`;
+                    
+                    // Trigger reflow
+                    void button.offsetWidth;
+                    
+                    button.style.opacity = '1';
+                    button.style.transform = 'translateY(0)';
+                }
                 
-                // Trigger reflow
-                void button.offsetWidth;
+                // Add click effect for all buttons
+                button.addEventListener('mousedown', function(e) {
+                    this.style.transform = 'scale(0.98)';
+                });
                 
+                button.addEventListener('mouseup', function(e) {
+                    this.style.transform = 'scale(1)';
+                });
+                
+                button.addEventListener('mouseleave', function(e) {
+                    this.style.transform = 'scale(1)';
+                });
+                
+                // Add click handler for navigation
+                if (button.getAttribute('href') && button.getAttribute('href') !== '#') {
+                    button.addEventListener('click', function(e) {
+                        // Allow default navigation for links
+                        if (this.getAttribute('href').startsWith('http') || 
+                            this.getAttribute('href').startsWith('/') ||
+                            this.getAttribute('href').startsWith('#')) {
+                            return true;
+                        }
+                        // For other cases, prevent default and handle with window.location
+                        e.preventDefault();
+                        window.location.href = this.getAttribute('href');
+                    });
+                }
+            });
+        });
+    </script>
+    
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Handle back button and page refresh
+        window.addEventListener('pageshow', function(event) {
+            // Scroll to top on page load
+            window.scrollTo(0, 0);
+            
+            // Re-trigger button animations
+            const buttons = document.querySelectorAll('.dashboard-btn');
+            buttons.forEach(button => {
                 button.style.opacity = '1';
                 button.style.transform = 'translateY(0)';
-            });
-            
-            // Add click effect
-            buttons.forEach(button => {
-                button.addEventListener('click', function() {
-                    this.style.transform = 'scale(0.98)';
-                    setTimeout(() => {
-                        this.style.transform = 'scale(1)';
-                    }, 100);
-                });
             });
         });
     </script>
 </body>
 </html>
-
-        <!-- Credits Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Total Credits</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ₹{{ "{:,.2f}".format(credits|default(0)) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-arrow-down fa-2x text-success"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Debits Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Total Debits</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                ₹{{ "{:,.2f}".format(debits|default(0)) }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-arrow-up fa-2x text-danger"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Transactions -->
-    <div class="row">
-        <div class="col-lg-12 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
-                    <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-primary">View All</a>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Contact</th>
-                                    <th>Description</th>
-                                    <th>Type</th>
-                                    <th>Amount (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if recent_transactions %}
-                                    {% for tx in recent_transactions %}
-                                    <tr>
-                                        <td>{{ tx.date.strftime('%d-%m-%Y') if tx.date else '' }}</td>
-                                        <td>{{ tx.contact.name if tx.contact else 'N/A' }}</td>
-                                        <td>{{ tx.description or '' }}</td>
-                                        <td>
-                                            <span class="badge {{ 'badge-success' if tx.type == 'credit' else 'badge-danger' }}">
-                                                {{ tx.type|capitalize }}
-                                            </span>
-                                        </td>
-                                        <td class="text-right">{{ "{:,.2f}".format(tx.amount) }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="5" class="text-center">No recent transactions</td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Department Info -->
-    <div class="row">
-        <div class="col-lg-12 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ department }} Department Overview</h6>
-                </div>
-                <div class="card-body">
-                    <p>Welcome to the Jodhpur Mines Cash Control System. This is the {{ department.lower() }} department dashboard where you can manage all financial transactions.</p>
-                    <p class="mb-0">Use the navigation menu to access different sections of the application or click on the cards above to view transactions and reports.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
