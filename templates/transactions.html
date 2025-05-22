@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Jodhpur Mines Cash Control{% endblock %}
+
+{% block extra_css %}
+<style>
+    .transaction-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .search-container {
+        flex: 1;
+        min-width: 300px;
+        max-width: 500px;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    
+    .search-results {
+        position: absolute;
+        background: white;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: none;
+    }
+    
+    .search-result-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .search-result-item:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background-color: #1a3a5e;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0f2c4d;
+    }
+    
+    .date-filter {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .date-input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .transactions-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .transactions-table th,
+    .transactions-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .transactions-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    
+    .transactions-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .credit-amount {
+        color: #28a745;
+    }
+    
+    .debit-amount {
+        color: #dc3545;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1050;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 25px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 25px;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+    
+    .hidden {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 20px;">
+    <h1 style="margin-bottom: 25px;">Transactions</h1>
+    
+    <div class="transaction-actions">
+        <div class="search-container">
+            <input type="text" 
+                   id="searchInput" 
+                   class="search-input" 
+                   placeholder="Search by name..." 
+                   value="{{ search_query }}"
+                   autocomplete="off">
+            <div id="searchResults" class="search-results"></div>
+            
+            {% if selected_contact %}
+            <div class="date-filter">
+                <input type="date" 
+                       id="startDate" 
+                       class="date-input" 
+                       value="{{ start_date or '' }}"
+                       max="{{ now }}">
+                <span>to</span>
+                <input type="date" 
+                       id="endDate" 
+                       class="date-input" 
+                       value="{{ end_date or '' }}"
+                       max="{{ now }}">
+                <button id="applyFilter" class="btn btn-primary">Apply</button>
+                <button id="clearFilter" class="btn btn-secondary">Clear</button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <button id="addTransactionBtn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Transaction
+        </button>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="transactions-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th class="text-right">Credit (₹)</th>
+                    <th class="text-right">Debit (₹)</th>
+                    <th class="text-right">Balance (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if transactions %}
+                    {% for tx in transactions %}
+                    <tr>
+                        <td>{{ tx.date.strftime('%d-%m-%Y') }}</td>
+                        <td>{{ tx.contact_name }}</td>
+                        <td>{{ tx.description }}</td>
+                        <td class="text-right credit-amount">
+                            {% if tx.credit %}{{ "%0.2f"|format(tx.credit) }}{% endif %}
+                        </td>
+                        <td class="text-right debit-amount">
+                            {% if tx.debit %}{{ "%0.2f"|format(tx.debit) }}{% endif %}
+                        </td>
+                        <td class="text-right">{{ "%0.2f"|format(tx.balance) }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            No transactions found. Start by adding a new transaction.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Add Transaction Modal -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <h2>Add New Transaction</h2>
+            <form id="transactionForm">
+                <input type="hidden" id="contactId" name="contact_id">
+                
+                <div class="form-group">
+                    <label for="contactName">Contact Name</label>
+                    <input type="text" id="contactName" class="form-control" required>
+                    <div id="contactSearchResults" class="search-results"></div>
+
+    <!-- Search and Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form id="searchForm" class="form-inline mb-3">
+                <div class="form-group mr-3 mb-2">
+                    <label for="searchQuery" class="sr-only">Search</label>
+                    <input type="text" class="form-control" id="searchQuery" name="q" placeholder="Search by name or phone" value="{{ search_query }}">
+                    <input type="hidden" id="contactId" name="contact_id" value="{{ selected_contact_id }}">
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label for="startDate" class="mr-2">From:</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" value="{{ start_date or '' }}">
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label for="endDate" class="mr-2">To:</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" value="{{ end_date or '' }}">
+                </div>
+                <button type="submit" class="btn btn-primary mb-2">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+            <div id="searchResults" class="list-group" style="display: none; position: absolute; z-index: 1000; width: 100%;">
+                <!-- Search results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Amount (₹)</th>
+                            <th>Balance (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td>{{ tx.date.strftime('%d-%m-%Y') if tx.date else '' }}</td>
+                            <td>{{ tx.contact_name }}</td>
+                            <td>{{ tx.description or '' }}</td>
+                            <td>
+                                <span class="badge {{ 'badge-success' if tx.type == 'credit' else 'badge-danger' }}">
+                                    {{ 'Credit' if tx.type == 'credit' else 'Debit' }}
+                                </span>
+                            </td>
+                            <td class="text-right">{{ "{:,.2f}".format(tx.amount) }}</td>
+                            <td class="text-right font-weight-bold">{{ "{:,.2f}".format(tx.balance) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No transactions found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="modal fade" id="addTransactionModal" tabindex="-1" role="dialog" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTransactionModalLabel">Add New Transaction</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label for="transactionDate">Date</label>
+                        <input type="date" class="form-control" id="transactionDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactSearch">Contact</label>
+                        <input type="text" class="form-control" id="contactSearch" placeholder="Search or add new contact" required>
+                        <input type="hidden" id="contactId">
+                        <div id="contactSearchResults" class="list-group mt-2" style="display: none;">
+                            <!-- Contact search results will be populated here -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionType">Type</label>
+                        <select class="form-control" id="transactionType" required>
+                            <option value="credit">Credit (Money Received)</option>
+                            <option value="debit">Debit (Money Paid)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionAmount">Amount (₹)</label>
+                        <input type="number" class="form-control" id="transactionAmount" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionDescription">Description (Optional)</label>
+                        <textarea class="form-control" id="transactionDescription" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveTransaction">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Contact Modal -->
+<div class="modal fade" id="addContactModal" tabindex="-1" role="dialog" aria-labelledby="addContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addContactModalLabel">Add New Contact</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="contactName">Name *</label>
+                        <input type="text" class="form-control" id="contactName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPhone">Phone</label>
+                        <input type="tel" class="form-control" id="contactPhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactAddress">Address</label>
+                        <textarea class="form-control" id="contactAddress" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveContact">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    $('#transactionDate').val(today);
+    
+    // Contact search functionality
+    let searchTimeout;
+    $('#contactSearch').on('input', function() {
+        clearTimeout(searchTimeout);
+        const query = $(this).val().trim();
+        
+        if (query.length < 2) {
+            $('#contactSearchResults').hide().empty();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            $.get('/api/contacts/search', { q: query }, function(data) {
+                const $results = $('#contactSearchResults');
+                $results.empty();
+                
+                if (data.length > 0) {
+                    data.forEach(function(contact) {
+                        $results.append(`
+                            <a href="#" class="list-group-item list-group-item-action contact-item" 
+                               data-id="${contact.id}">
+                                <strong>${contact.name}</strong>
+                                ${contact.phone ? `<br><small>${contact.phone}</small>` : ''}
+                            </a>
+                        `);
+                    });
+                } else {
+                    $results.append(`
+                        <div class="list-group-item">
+                            No contacts found. 
+                            <a href="#" id="addNewContact" data-dismiss="modal" data-toggle="modal" data-target="#addContactModal">
+                                Add new contact
+                            </a>
+                        </div>
+                    `);
+                }
+                
+                $results.show();
+            });
+        }, 300);
+    });
+    
+    // Handle contact selection
+    $(document).on('click', '.contact-item', function(e) {
+        e.preventDefault();
+        const contactId = $(this).data('id');
+        const contactName = $(this).find('strong').text();
+        
+        $('#contactId').val(contactId);
+        $('#contactSearch').val(contactName);
+        $('#contactSearchResults').hide();
+    });
+    
+    // Add new contact from search
+    $(document).on('click', '#addNewContact', function() {
+        const name = $('#contactSearch').val();
+        if (name) {
+            $('#contactName').val(name);
+        }
+    });
+    
+    // Save new contact
+    $('#saveContact').click(function() {
+        const contactData = {
+            name: $('#contactName').val(),
+            phone: $('#contactPhone').val(),
+            address: $('#contactAddress').val()
+        };
+        
+        if (!contactData.name) {
+            alert('Name is required');
+            return;
+        }
+        
+        $.ajax({
+            url: '/contact/new',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(contactData),
+            success: function(response) {
+                if (response.success) {
+                    // Update the contact selection
+                    $('#contactId').val(response.contact.id);
+                    $('#contactSearch').val(response.contact.name);
+                    $('#addContactModal').modal('hide');
+                    // Clear the form
+                    $('#contactForm')[0].reset();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error saving contact: ' + (xhr.responseJSON?.message || 'Unknown error'));
+            }
+        });
+    });
+    
+    // Save transaction
+    $('#saveTransaction').click(function() {
+        const transactionData = {
+            date: $('#transactionDate').val(),
+            contact_id: $('#contactId').val(),
+            type: $('#transactionType').val(),
+            amount: parseFloat($('#transactionAmount').val()),
+            description: $('#transactionDescription').val()
+        };
+        
+        // Basic validation
+        if (!transactionData.contact_id) {
+            alert('Please select or add a contact');
+            return;
+        }
+        
+        if (!transactionData.amount || transactionData.amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+        
+        $.ajax({
+            url: '/transaction/new',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(transactionData),
+            success: function(response) {
+                if (response.success) {
+                    // Reload the page to see the new transaction
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error saving transaction: ' + (xhr.responseJSON?.message || 'Unknown error'));
+            }
+        });
+    });
+    
+    // Initialize date picker
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true
+    });
+    
+    // Close dropdowns when clicking outside
+    $(document).click(function(event) {
+        if (!$(event.target).closest('#searchQuery, #searchResults').length) {
+            $('#searchResults').hide();
+        }
+        if (!$(event.target).closest('#contactSearch, #contactSearchResults').length) {
+            $('#contactSearchResults').hide();
+        }
+    });
+    
+    // Search form submission
+    $('#searchForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        window.location.href = '/transactions?' + formData;
+    });
+});
+</script>
+{% endblock %}

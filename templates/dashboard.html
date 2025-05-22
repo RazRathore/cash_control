@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Jodhpur Mines Financial System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --dark-gold: #8b6914;
+            --light-gold: #f5d76e;
+            --dark-blue: #0f2c4d;
+            --light-blue: #2c5a8c;
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('https://images.unsplash.com/photo-1533130090877-8530e6e5ad79?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .mining-icon {
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.1;
+            z-index: 0;
+            color: var(--secondary-color);
+        }
+
+        .mining-icon-1 { top: 10%; left: 10%; }
+        .mining-icon-2 { bottom: 10%; right: 10%; transform: rotate(180deg); }
+
+        .dashboard-container {
+            background: rgba(26, 58, 94, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            border-top: 4px solid var(--secondary-color);
+        }
+
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color), var(--secondary-color));
+        }
+
+        .header {
+            padding: 30px 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            margin-bottom: 20px;
+        }
+
+        .logo i {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .logo h1 {
+            color: var(--secondary-color);
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logo p {
+            color: #c0c0c0;
+            font-size: 1rem;
+            margin-top: 5px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .search-container input:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3);
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            padding: 0 40px 40px;
+        }
+
+        .dashboard-btn {
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            border: none;
+            border-radius: 6px;
+            color: var(--dark-color);
+            padding: 25px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .dashboard-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .dashboard-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-btn:hover::before {
+            opacity: 1;
+        }
+
+        .dashboard-btn i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .user-info i {
+            margin-left: 10px;
+            cursor: pointer;
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .button-grid {
+                grid-template-columns: 1fr;
+                padding: 0 20px 30px;
+            }
+            
+            .dashboard-btn {
+                padding: 20px 15px;
+            }
+            
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body class="mining-theme">
+    <i class="fas fa-mountain mining-icon mining-icon-1"></i>
+    <i class="fas fa-coins mining-icon mining-icon-2"></i>
+    <i class="fas fa-chart-line mining-icon" style="top: 60%; left: 20%; font-size: 10rem;"></i>
+    <i class="fas fa-industry mining-icon" style="top: 20%; right: 15%; font-size: 9rem;"></i>
+    
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-mountain"></i>
+                <h1>Jodhpur Mines</h1>
+                <p>Financial Management System</p>
+            </div>
+            
+            <div class="user-info">
+                Welcome, Admin
+                <a href="{{ url_for('logout') }}" style="color: var(--secondary-color); text-decoration: none; margin-left: 10px;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+            
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search transactions, accounts, or reports...">
+            </div>
+        </div>
+        
+        <div class="button-grid">
+            <a href="#" class="dashboard-btn">
+                <i class="fas fa-exchange-alt"></i>
+                Transactions
+                <span class="badge">Manage all financial transactions</span>
+            </a>
+            
+            <a href="#" class="dashboard-btn">
+                <i class="fas fa-wallet"></i>
+                Accounts
+                <span class="badge">View and manage accounts</span>
+            </a>
+            
+            <a href="#" class="dashboard-btn">
+                <i class="fas fa-file-invoice-dollar"></i>
+                Transactions Report
+                <span class="badge">Generate detailed reports</span>
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Add animation to buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.dashboard-btn');
+            buttons.forEach((button, index) => {
+                button.style.opacity = '0';
+                button.style.transform = 'translateY(20px)';
+                button.style.transition = `all 0.5s ease ${index * 0.1}s`;
+                
+                // Trigger reflow
+                void button.offsetWidth;
+                
+                button.style.opacity = '1';
+                button.style.transform = 'translateY(0)';
+            });
+            
+            // Add click effect
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+        <!-- Credits Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Credits</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                ₹{{ "{:,.2f}".format(credits|default(0)) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-down fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debits Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Debits</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                ₹{{ "{:,.2f}".format(debits|default(0)) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-arrow-up fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
+                    <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Contact</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_transactions %}
+                                    {% for tx in recent_transactions %}
+                                    <tr>
+                                        <td>{{ tx.date.strftime('%d-%m-%Y') if tx.date else '' }}</td>
+                                        <td>{{ tx.contact.name if tx.contact else 'N/A' }}</td>
+                                        <td>{{ tx.description or '' }}</td>
+                                        <td>
+                                            <span class="badge {{ 'badge-success' if tx.type == 'credit' else 'badge-danger' }}">
+                                                {{ tx.type|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right">{{ "{:,.2f}".format(tx.amount) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No recent transactions</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Info -->
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ department }} Department Overview</h6>
+                </div>
+                <div class="card-body">
+                    <p>Welcome to the Jodhpur Mines Cash Control System. This is the {{ department.lower() }} department dashboard where you can manage all financial transactions.</p>
+                    <p class="mb-0">Use the navigation menu to access different sections of the application or click on the cards above to view transactions and reports.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

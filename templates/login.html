@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jodhpur Mines - Financial Ledger System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        :root {
+            --primary-color: #1a3a5e;  /* Deep blue */
+            --secondary-color: #d4af37;  /* Gold */
+            --accent-color: #b8860b;  /* Dark goldenrod */
+            --dark-gold: #8b6914;  /* Darker gold */
+            --light-gold: #f5d76e;  /* Light gold */
+            --dark-blue: #0f2c4d;  /* Darker blue */
+            --light-blue: #2c5a8c;  /* Lighter blue */
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('https://images.unsplash.com/photo-1533130090877-8530e6e5ad79?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .mining-icon {
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.08;
+            z-index: 0;
+            color: var(--secondary-color);
+        }
+
+        .mining-icon-1 {
+            top: 10%;
+            left: 10%;
+        }
+
+        .mining-icon-2 {
+            bottom: 10%;
+            right: 10%;
+            transform: rotate(180deg);
+        }
+
+        .login-container {
+            background: rgba(26, 58, 94, 0.9);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+            border-top: 4px solid var(--secondary-color);
+            animation: fadeIn 0.5s ease-out;
+            color: white;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color), var(--secondary-color));
+            border-radius: 8px 8px 0 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 3.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .logo h1 {
+            color: var(--secondary-color);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo p {
+            color: #c0c0c0;
+            font-size: 1rem;
+            margin-top: 5px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.8rem;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+            font-size: 1.1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3);
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            color: #1a1a1a;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+            background: linear-gradient(135deg, #e0c05a, #c99a1a);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid var(--error-color);
+            color: #ff9e9e;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-error {
+            background-color: #fde8e8;
+            color: var(--error-color);
+            border-left: 4px solid var(--error-color);
+        }
+
+        .alert i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #a0a0a0;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .forgot-password a:hover {
+            color: var(--secondary-color);
+            text-decoration: none;
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a0a0a0;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 576px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .mining-icon {
+                font-size: 6rem;
+            }
+        }
+
+        /* Mining theme elements */
+        .mining-theme .form-control:focus {
+            background-image: linear-gradient(45deg, rgba(230, 126, 34, 0.1), transparent);
+        }
+
+        .mining-theme .btn {
+            background: linear-gradient(45deg, #e67e22, #d35400);
+        }
+    </style>
+</head>
+<body class="mining-theme">
+    <i class="fas fa-mountain mining-icon mining-icon-1"></i>
+    <i class="fas fa-coins mining-icon mining-icon-2"></i>
+    <i class="fas fa-chart-line mining-icon" style="top: 60%; left: 20%; font-size: 10rem;"></i>
+    <i class="fas fa-industry mining-icon" style="top: 20%; right: 15%; font-size: 9rem;"></i>
+    
+    <div class="login-container">
+        <div class="logo">
+            <i class="fas fa-mountain"></i>
+            <h1>Jodhpur Mines</h1>
+            <p>Financial Ledger System</p>
+            <div style="margin-top: 15px; display: flex; justify-content: center; gap: 15px;">
+                <span style="display: inline-flex; align-items: center; background: rgba(212, 175, 55, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; color: var(--secondary-color);">
+                    <i class="fas fa-hard-hat" style="margin-right: 5px;"></i> Mining
+                </span>
+                <span style="display: inline-flex; align-items: center; background: rgba(212, 175, 55, 0.2); padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; color: var(--secondary-color);">
+                    <i class="fas fa-calculator" style="margin-right: 5px;"></i> Finance
+                </span>
+            </div>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}">
+                        <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+            </div>
+            
+            <div class="forgot-password">
+                <a href="#"><i class="fas fa-key"></i> Forgot Password? Contact System Administrator</a>
+            </div>
+            
+            <button type="submit" class="btn">
+                <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i> Access Ledger System
+            </button>
+        </form>
+        
+        <div class="footer">
+            <p>&copy; 2025 Jodhpur Mining Corporation. All rights reserved.</p>
+            <p style="margin-top: 5px; font-size: 0.7rem; opacity: 0.7;">
+                <i class="fas fa-shield-alt" style="margin-right: 5px;"></i> Secure Login
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Add animation to form elements
+        document.addEventListener('DOMContentLoaded', function() {
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach((group, index) => {
+                group.style.opacity = '0';
+                group.style.transform = 'translateY(20px)';
+                group.style.transition = `all 0.5s ease ${index * 0.1}s`;
+                
+                // Trigger reflow
+                void group.offsetWidth;
+                
+                group.style.opacity = '1';
+                group.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
