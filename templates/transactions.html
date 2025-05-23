@@ -427,12 +427,14 @@
                             </select>
                         </div>
                         
-                        <div class="input-group">
+                        <div class="input-group" style="display: flex; flex-direction: column;">
                             <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}" placeholder="From date">
+                            <div style="text-align: center; margin-top: 4px; font-size: 0.9em; color: #666;">From</div>
                         </div>
                         
-                        <div class="input-group">
+                        <div class="input-group" style="display: flex; flex-direction: column;">
                             <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}" placeholder="To date">
+                            <div style="text-align: center; margin-top: 4px; font-size: 0.9em; color: #666;">To</div>
                         </div>
                         
                         <div class="filter-buttons">
