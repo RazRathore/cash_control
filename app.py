@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, Markup
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -21,6 +21,14 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Custom template filter
+@app.template_filter('cascade_css')
+def cascade_css(value):
+    """A dummy filter that returns the input as-is.
+    This is a workaround for templates that expect this filter.
+    """
+    return value
 
 # User model
 class User(db.Model, UserMixin):
@@ -114,6 +122,11 @@ def logout():
 @login_required
 def transactions():
     return render_template('transactions_standalone.html')
+
+@app.route('/transactions/report')
+@login_required
+def transactions_report():
+    return render_template('transactions_report.html')
 
 @app.route('/accounts')
 @login_required

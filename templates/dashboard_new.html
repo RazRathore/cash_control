@@ -280,20 +280,21 @@
         <div class="button-grid">
             <a href="{{ url_for('transactions') }}" class="dashboard-btn">
                 <i class="fas fa-exchange-alt"></i>
-                Transactions
+                <span>Transactions</span>
                 <span class="badge">Manage all financial transactions</span>
             </a>
             
+
             <a href="{{ url_for('accounts') }}" class="dashboard-btn">
                 <i class="fas fa-wallet"></i>
                 Accounts
                 <span class="badge">View and manage accounts</span>
             </a>
             
-            <a href="#" class="dashboard-btn">
-                <i class="fas fa-file-invoice-dollar"></i>
-                Transactions Report
-                <span class="badge">Generate detailed reports</span>
+            <a href="{{ url_for('transactions_report') }}" class="dashboard-btn">
+                <i class="fas fa-chart-line"></i>
+                <span>Transactions Report</span>
+                <span class="badge">View analytics and reports</span>
             </a>
         </div>
     </div>

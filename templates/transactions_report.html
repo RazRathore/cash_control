@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions Report - Jodhpur Mines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            color: var(--dark-color);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .back-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #0d2940;
+            transform: translateY(-2px);
+        }
+
+        .report-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-btn {
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .active-accounts-btn {
+            background-color: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .active-accounts-btn:hover {
+            background-color: #3a5ce4;
+            transform: translateY(-2px);
+        }
+        
+        .date-range-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 10px;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .filter-btn:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .close-modal:hover {
+            color: #333;
+        }
+        
+        /* Active Accounts List */
+        .active-accounts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .account-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .account-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        .transaction-count {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4a6cf7, #6a11cb);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-group, .date-range-toggle {
+                width: 100%;
+            }
+            
+            .date-range-toggle {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Transactions Report</h1>
+            <a href="{{ url_for('home') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <div class="report-container">
+            <div class="filters">
+                <div class="date-range-toggle">
+                    <span>Date Range:</span>
+                    <div class="filter-group">
+                        <select id="timeRange" class="form-control">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="365">Last Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filter-group" id="customRangeGroup" style="display: none; margin-left: 15px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div>
+                            <label for="startDate">From</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+                        <div>
+                            <label for="endDate">To</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="filter-btn" id="applyFilter">
+                    <i class="fas fa-filter"></i> Apply
+                </button>
+                
+                <button class="active-accounts-btn" id="showActiveAccounts">
+                    <i class="fas fa-chart-pie"></i> Most Active Accounts
+                </button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="transactionsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Active Accounts Modal -->
+        <div id="activeAccountsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Most Active Accounts</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="active-accounts-list">
+                        <!-- Will be populated by JavaScript -->
+                        <div class="account-item">
+                            <div class="account-name">Account Name</div>
+                            <div class="transaction-count">Transactions: 0</div>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize chart with sample data
+        const ctx = document.getElementById('transactionsChart').getContext('2d');
+        let transactionsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => `Day ${i + 1}`),
+                datasets: [{
+                    label: 'Income',
+                    data: Array.from({length: 30}, () => Math.floor(Math.random() * 1000) + 500),
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }, {
+                    label: 'Expenses',
+                    data: Array.from({length: 30}, () => Math.floor(Math.random() * 800) + 200),
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Transactions Overview',
+                        font: {
+                            size: 18,
+                            family: 'Montserrat, sans-serif'
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: 'Poppins, sans-serif'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Handle time range filter
+        document.getElementById('timeRange').addEventListener('change', function() {
+            const customRangeGroup = document.getElementById('customRangeGroup');
+            const endDateGroup = document.getElementById('endDateGroup');
+            
+            if (this.value === 'custom') {
+                customRangeGroup.style.display = 'flex';
+                endDateGroup.style.display = 'flex';
+                
+                // Set default dates (last 30 days)
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                
+                document.getElementById('startDate').valueAsDate = startDate;
+                document.getElementById('endDate').valueAsDate = endDate;
+            } else {
+                customRangeGroup.style.display = 'none';
+                endDateGroup.style.display = 'none';
+                // In a real app, you would update the chart data here based on the selected range
+                updateChartData(parseInt(this.value));
+            }
+        });
+
+        // Handle apply filter button
+        document.getElementById('applyFilter').addEventListener('click', function() {
+            const timeRange = document.getElementById('timeRange').value;
+            if (timeRange === 'custom') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                // In a real app, you would fetch data for the custom date range
+                console.log('Fetching data from', startDate, 'to', endDate);
+            }
+            // Update chart with new data (in a real app, this would be an API call)
+            updateChartData(timeRange === 'custom' ? null : parseInt(timeRange));
+        });
+
+        // Function to update chart data (sample implementation)
+        function updateChartData(days) {
+            if (!days) return; // Skip for custom range which would be handled separately
+            
+            // Generate new labels based on the selected range
+            const labels = [];
+            for (let i = 0; i < days; i++) {
+                if (days <= 30) {
+                    labels.push(`Day ${i + 1}`);
+                } else if (days <= 90) {
+                    if (i % 3 === 0) labels.push(`Week ${Math.floor(i/3) + 1}`);
+                } else {
+                    if (i % 30 === 0) labels.push(`Month ${Math.floor(i/30) + 1}`);
+                }
+            }
+            
+            // Generate new random data
+            const incomeData = Array.from({length: days}, () => Math.floor(Math.random() * 1000) + 500);
+            const expenseData = Array.from({length: days}, () => Math.floor(Math.random() * 800) + 200);
+            
+            // Update chart
+            transactionsChart.data.labels = labels;
+            transactionsChart.data.datasets[0].data = incomeData;
+            transactionsChart.data.datasets[1].data = expenseData;
+            transactionsChart.update();
+        }
+
+        // Initialize date inputs for custom range
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').max = today;
+        document.getElementById('endDate').max = today;
+        
+        document.getElementById('startDate').addEventListener('change', function() {
+            document.getElementById('endDate').min = this.value;
+        });
+        
+        document.getElementById('endDate').addEventListener('change', function() {
+            document.getElementById('startDate').max = this.value;
+        });
+        
+        // Modal functionality
+        const modal = document.getElementById('activeAccountsModal');
+        const btn = document.getElementById('showActiveAccounts');
+        const span = document.querySelector('.close-modal');
+        
+        // Sample data for active accounts (replace with actual data from your backend)
+        const activeAccountsData = [
+            { name: 'Main Business Account', transactions: 42 },
+            { name: 'Petty Cash', transactions: 28 },
+            { name: 'Savings Account', transactions: 15 },
+            { name: 'Vendor Payments', transactions: 9 },
+            { name: 'Employee Salaries', transactions: 5 }
+        ];
+        
+        // Show modal
+        btn.onclick = function() {
+            updateActiveAccountsList();
+            modal.style.display = 'flex';
+        }
+        
+        // Close modal
+        span.onclick = function() {
+            modal.style.display = 'none';
+        }
+        
+        // Close when clicking outside the modal
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Update active accounts list with sample data
+        function updateActiveAccountsList() {
+            const container = document.querySelector('.active-accounts-list');
+            container.innerHTML = ''; // Clear existing items
+            
+            // Find max transactions for percentage calculation
+            const maxTransactions = Math.max(...activeAccountsData.map(acc => acc.transactions));
+            
+            // Create account items
+            activeAccountsData.forEach(account => {
+                const percentage = (account.transactions / maxTransactions) * 100;
+                
+                const accountItem = document.createElement('div');
+                accountItem.className = 'account-item';
+                accountItem.innerHTML = `
+                    <div class="account-name">${account.name}</div>
+                    <div class="transaction-count">Transactions: ${account.transactions}</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: ${percentage}%;"></div>
+                    </div>
+                `;
+                
+                container.appendChild(accountItem);
+            });
+        }
+        
+        // Initialize with sample data
+        updateActiveAccountsList();
+    </script>
+</body>
+</html>
