@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, Markup
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from datetime import datetime
 import os
 import re
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from extensions import db
 from models import User, Client, Transaction
+import pytz
 
 # Load environment variables
 load_dotenv()
@@ -70,8 +71,59 @@ def logout():
 @app.route('/transactions')
 @login_required
 def transactions():
-    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
-    return render_template('transactions.html', transactions=transactions)
+    from datetime import datetime, timedelta, timezone
+    import pytz
+    
+    # Get filter parameters
+    client_id = request.args.get('client_id', type=int)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    # Initialize query
+    query = db.session.query(Transaction)
+    
+    # Apply client filter if selected
+    if client_id:
+        query = query.filter(Transaction.client_id == client_id)
+    
+    # Parse and apply date filters
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(Transaction.date >= start_date)
+            
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() + timedelta(days=1)
+            query = query.filter(Transaction.date < end_date)
+    except ValueError as e:
+        print(f"Error parsing dates: {e}")
+        # Continue with unfiltered query if there's a date parsing error
+    
+    # Get all transactions ordered by date and id
+    all_transactions = query.order_by(Transaction.date.desc(), Transaction.id.desc()).all()
+    
+    # Calculate running balance for each transaction
+    balance = 0
+    transactions = []
+    for transaction in all_transactions:
+        balance += (transaction.credit_amount - transaction.debit_amount)
+        transaction.balance = balance  # Add balance to transaction object
+        transactions.append(transaction)
+    
+    # Get unique clients for the filter dropdown
+    clients = Client.query.order_by(Client.name).all()
+    
+    # Debug: Print the generated SQL query
+    print(f"SQL Query: {query.statement}")
+    print(f"Found {len(transactions)} transactions")
+    
+    return render_template('transactions.html', 
+                         transactions=transactions, 
+                         clients=clients,
+                         selected_client_id=str(client_id) if client_id else None,
+                         start_date=start_date_str if start_date_str else '',
+                         end_date=end_date_str if end_date_str else '',
+                         pytz=pytz)
 
 @app.route('/transactions/new', methods=['GET', 'POST'])
 @login_required
@@ -89,24 +141,27 @@ def new_transaction():
                 flash('Client is required', 'danger')
                 return render_template('new_transaction.html', clients=clients, today=datetime.utcnow().date())
             
-            # Parse date or use current date
-            transaction_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
+            # Get current time in IST
+            ist = pytz.timezone('Asia/Kolkata')
+            current_time = datetime.now(ist).replace(tzinfo=None)  # Store as naive datetime in IST
             
             # Get client for the transaction
             client = Client.query.get_or_404(client_id)
             
-            # Create transaction
             # Convert amounts to integers (storing in paise)
             debit_amount = int(float(request.form.get('debit_amount', 0) or 0)) * 100
             credit_amount = int(float(request.form.get('credit_amount', 0) or 0)) * 100
             
+            # Create transaction with current timestamp
             transaction = Transaction(
-                date=transaction_date,
-                name=f"Transaction for {client.name}",  # Auto-generated name
+                date=current_time,  # Using current timestamp for the transaction
+                name=f"Transaction for {client.name}",
                 description=request.form.get('description', ''),
                 debit_amount=debit_amount,
                 credit_amount=credit_amount,
-                client_id=client_id
+                client_id=client_id,
+                created_at=current_time,
+                updated_at=current_time
             )
             
             # Calculate balance for the client (in paise)

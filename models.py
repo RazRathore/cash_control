@@ -76,7 +76,7 @@ class Transaction(db.Model):
     __tablename__ = 'transactions'
     
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     debit_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
