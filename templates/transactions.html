@@ -7,6 +7,57 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Flash message animations */
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; max-height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; }
+        }
+        
+        .flash-message {
+            margin: 15px 0;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bg-success { background-color: #28a745 !important; }
+        .bg-danger { background-color: #dc3545 !important; }
+        .bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .bg-info { background-color: #17a2b8 !important; }
+        .bg-primary { background-color: #007bff !important; }
+        
+        .flash-message.fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        .flash-message .close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .flash-message .close:hover {
+            opacity: 1;
+        }
+        
         :root {
             --primary-color: #1a3a5e;
             --secondary-color: #d4af37;
@@ -345,30 +396,31 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="header" style="position: relative;">
             <div class="header-title">
                 <a href="#" class="back-link" title="Go back" onclick="window.history.back(); return false;">
                     <i class="fas fa-arrow-left"></i>
                 </a>
-                <h1><i class="fas fa-exchange-alt"></i> 
+                <h1 style="display: inline-block; margin-left: 10px;"><i class="fas fa-exchange-alt"></i> 
                     {% if selected_client_id %}
                         {% set client = clients|selectattr('id', 'equalto', selected_client_id)|list %}
-                        <span class="badge" style="background-color: #1a3a5e; color: white;">
-                            {{ client[0].name if client else 'Unknown' }}
-                        </span>'s Transactions
+                        {{ client[0].name if client else 'All' }} Transactions
                     {% else %}
                         All Transactions
                     {% endif %}
                 </h1>
             </div>
+            <a href="{{ url_for('home') }}" class="btn" style="position: absolute; top: 0; right: 0; margin: 10px;">
+                <i class="fas fa-tachometer-alt"></i> Back to Dashboard
+            </a>
             <div class="header-actions">
-                <form method="get" action="{{ url_for('transactions') }}" class="filter-form">
+                <form method="get" action="{{ url_for('transactions') }}" class="filter-form" id="filterForm">
                     <div class="filter-row">
                         <div class="input-group">
-                            <select name="client_id" id="clientFilter" class="form-select">
-                                <option value="">All Clients</option>
+                            <select name="client_id" id="clientFilter" class="form-select" onchange="this.form.submit()">
+                                <option value="">View All Clients</option>
                                 {% for client in clients %}
-                                    <option value="{{ client.id }}" {% if selected_client_id == client.id|string %}selected{% endif %}>
+                                    <option value="{{ client.id }}" {% if request.args.get('client_id')|string == client.id|string %}selected{% endif %}>
                                         {{ client.name }} ({{ client.phone or 'No Phone' }})
                                     </option>
                                 {% endfor %}
@@ -376,21 +428,21 @@
                         </div>
                         
                         <div class="input-group">
-                            <input type="date" name="start_date" class="form-control" value="{{ start_date }}" placeholder="From date">
+                            <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}" placeholder="From date">
                         </div>
                         
                         <div class="input-group">
-                            <input type="date" name="end_date" class="form-control" value="{{ end_date }}" placeholder="To date">
+                            <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}" placeholder="To date">
                         </div>
                         
                         <div class="filter-buttons">
-                            {% if selected_client_id or start_date or end_date %}
+                            {% if request.args.get('client_id') or request.args.get('start_date') or request.args.get('end_date') %}
                             <a href="{{ url_for('transactions') }}" class="btn btn-outline-secondary" type="button">
-                                <i class="fas fa-times"></i> Clear
+                                <i class="fas fa-times"></i> Clear Filters
                             </a>
                             {% endif %}
-                            <button class="btn btn-primary" type="submit">
-                                <i class="fas fa-filter"></i> Apply
+                            <button type="submit" class="btn">
+                                <i class="fas fa-filter"></i> Apply Filters
                             </button>
                         </div>
                     </div>
@@ -402,15 +454,21 @@
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        <div id="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {% if category == 'success' %}bg-success{% elif category == 'danger' %}bg-danger{% elif category == 'warning' %}bg-warning{% else %}bg-info{% endif %}" style="{% if category == 'success' %}background-color: #28a745;{% elif category == 'danger' %}background-color: #dc3545;{% elif category == 'warning' %}background-color: #ffc107; color: #000;{% else %}background-color: #17a2b8;{% endif %}">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                            <span>{{ message }}</span>
+                            <button type="button" class="close" onclick="dismissFlashMessage(this.parentElement)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
 
         {% if transactions %}
             <div style="overflow-x: auto;">
@@ -465,8 +523,8 @@
                                     </div>
                                 </td>
                                 <td class="font-monospace">
-                                    <div class="amount-cell">
-                                        ₹{{ "{0:,}".format(transaction.balance // 100) }}
+                                    <div class="amount-cell" style="font-weight: 500; color: {% if transaction.balance > 0 %}#28a745{% elif transaction.balance < 0 %}#dc3545{% else %}#6c757d{% endif %};">
+                                        ₹{{ "{0:,.2f}".format(transaction.balance / 100) }}
                                     </div>
                                 </td>
                             </tr>
@@ -474,6 +532,87 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination -->
+            <div class="pagination" style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                {% if transactions_pagination.has_prev %}
+                    <a href="{{ url_for('transactions', page=transactions_pagination.prev_num, client_id=request.args.get('client_id'), start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}" class="btn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                {% endif %}
+                
+                <div class="pagination-info" style="display: flex; align-items: center; gap: 10px;">
+                    <span>Page {{ transactions_pagination.page }} of {{ transactions_pagination.pages if transactions_pagination.pages > 0 else 1 }}</span>
+                    
+                    {% if transactions_pagination.pages > 1 %}
+                    <div class="page-jump" style="display: flex; align-items: center; gap: 5px;">
+                        <span>Go to page:</span>
+                        <input type="number" id="pageInput" min="1" max="{{ transactions_pagination.pages }}" value="{{ transactions_pagination.page }}" style="width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button onclick="goToPage()" class="btn" style="padding: 5px 10px;">Go</button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if transactions_pagination.has_next %}
+                    <a href="{{ url_for('transactions', page=transactions_pagination.next_num, client_id=request.args.get('client_id'), start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}" class="btn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+            
+            <script>
+            // Auto-dismiss flash messages after 2 seconds
+            document.addEventListener('DOMContentLoaded', function() {
+                const flashMessages = document.querySelectorAll('.flash-message');
+                
+                flashMessages.forEach(msg => {
+                    // Set timeout to fade out after 2 seconds
+                    setTimeout(() => {
+                        msg.classList.add('fade-out');
+                        // Remove from DOM after animation completes
+                        setTimeout(() => {
+                            msg.remove();
+                        }, 500);
+                    }, 2000);
+                });
+                
+                // Handle Enter key in page input
+                const pageInput = document.getElementById('pageInput');
+                if (pageInput) {
+                    pageInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            goToPage();
+                        }
+                    });
+                }
+            });
+            
+            // Function to manually dismiss a flash message
+            function dismissFlashMessage(element) {
+                element.classList.add('fade-out');
+                // Remove from DOM after animation completes
+                setTimeout(() => {
+                    element.remove();
+                }, 500);
+            }
+            
+            function goToPage() {
+                const pageInput = document.getElementById('pageInput');
+                if (!pageInput) return;
+                
+                const page = parseInt(pageInput.value);
+                const maxPage = parseInt('{{ transactions_pagination.pages }}');
+                
+                if (isNaN(page) || page < 1 || page > maxPage) {
+                    alert(`Please enter a valid page number between 1 and ${maxPage}`);
+                    return;
+                }
+                
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', page);
+                window.location.href = url.toString();
+            }
+            </script>
         {% else %}
             <div class="no-transactions">
                 <i class="fas fa-exchange-alt"></i>

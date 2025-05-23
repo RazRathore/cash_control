@@ -78,6 +78,8 @@ def transactions():
     client_id = request.args.get('client_id', type=int)
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
     
     # Initialize query
     query = db.session.query(Transaction)
@@ -99,15 +101,37 @@ def transactions():
         print(f"Error parsing dates: {e}")
         # Continue with unfiltered query if there's a date parsing error
     
-    # Get all transactions ordered by date and id
-    all_transactions = query.order_by(Transaction.date.desc(), Transaction.id.desc()).all()
+    # Get total count for pagination
+    total_transactions = query.count()
     
-    # Calculate running balance for each transaction
-    balance = 0
-    transactions = []
+    # Apply pagination
+    transactions_pagination = query.order_by(Transaction.date.desc(), Transaction.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Get all transactions up to the current page to calculate running balance per client
+    all_transactions_query = query.order_by(Transaction.client_id, Transaction.date.asc(), Transaction.id.asc())
+    all_transactions = all_transactions_query.all()
+    
+    # Calculate running balance per client
+    client_balances = {}
+    transaction_balances = {}
+    
     for transaction in all_transactions:
-        balance += (transaction.credit_amount - transaction.debit_amount)
-        transaction.balance = balance  # Add balance to transaction object
+        client_id = transaction.client_id
+        if client_id not in client_balances:
+            client_balances[client_id] = 0
+        
+        # Update the balance for this client
+        client_balances[client_id] += (transaction.credit_amount - transaction.debit_amount)
+        transaction_balances[transaction.id] = client_balances[client_id]
+    
+    # Get the paginated transactions in the correct order (newest first)
+    paginated_transactions = query.order_by(Transaction.date.desc(), Transaction.id.desc())\
+                                .paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Add balances to the paginated transactions
+    transactions = []
+    for transaction in paginated_transactions.items:
+        transaction.balance = transaction_balances.get(transaction.id, 0)
         transactions.append(transaction)
     
     # Get unique clients for the filter dropdown
@@ -119,6 +143,7 @@ def transactions():
     
     return render_template('transactions.html', 
                          transactions=transactions, 
+                         transactions_pagination=transactions_pagination,
                          clients=clients,
                          selected_client_id=str(client_id) if client_id else None,
                          start_date=start_date_str if start_date_str else '',
