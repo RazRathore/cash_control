@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, Markup
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import os
 import re
 from dotenv import load_dotenv
-from models import Client
+from flask_migrate import Migrate
 from extensions import db
+from models import User, Client, Transaction
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
 db.init_app(app)
+migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -29,58 +30,6 @@ def cascade_css(value):
     This is a workaround for templates that expect this filter.
     """
     return value
-
-# User model
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    department = db.Column(db.String(50), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-
-class Client(db.Model):
-    __tablename__ = 'clients'
-    __table_args__ = {'extend_existing': True}  # Allow table redefinition
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=True)
-    phone = db.Column(db.String(20), nullable=True)
-    address = db.Column(db.Text, nullable=True)
-    company = db.Column(db.String(100), nullable=True)
-    status = db.Column(db.String(20), default='active', nullable=False)
-    balance = db.Column(db.Float, default=0.0, nullable=False)
-    credit_limit = db.Column(db.Float, default=0.0, nullable=True)
-    notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'phone': self.phone,
-            'address': self.address,
-            'company': self.company,
-            'status': self.status,
-            'balance': self.balance,
-            'credit_limit': self.credit_limit,
-            'notes': self.notes,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -121,7 +70,63 @@ def logout():
 @app.route('/transactions')
 @login_required
 def transactions():
-    return render_template('transactions_standalone.html')
+    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
+    return render_template('transactions.html', transactions=transactions)
+
+@app.route('/transactions/new', methods=['GET', 'POST'])
+@login_required
+def new_transaction():
+    clients = Client.query.order_by(Client.name).all()
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            date_str = request.form.get('date')
+            client_id = request.form.get('client_id')
+            
+            # Validate required fields
+            if not client_id:
+                flash('Client is required', 'danger')
+                return render_template('new_transaction.html', clients=clients, today=datetime.utcnow().date())
+            
+            # Parse date or use current date
+            transaction_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
+            
+            # Get client for the transaction
+            client = Client.query.get_or_404(client_id)
+            
+            # Create transaction
+            # Convert amounts to integers (storing in paise)
+            debit_amount = int(float(request.form.get('debit_amount', 0) or 0)) * 100
+            credit_amount = int(float(request.form.get('credit_amount', 0) or 0)) * 100
+            
+            transaction = Transaction(
+                date=transaction_date,
+                name=f"Transaction for {client.name}",  # Auto-generated name
+                description=request.form.get('description', ''),
+                debit_amount=debit_amount,
+                credit_amount=credit_amount,
+                client_id=client_id
+            )
+            
+            # Calculate balance for the client (in paise)
+            client_balance = client.balance or 0
+            transaction.balance = client_balance + credit_amount - debit_amount
+            
+            # Update client's balance
+            client.balance = transaction.balance
+            
+            db.session.add(transaction)
+            db.session.commit()
+            
+            flash('Transaction added successfully!', 'success')
+            return redirect(url_for('transactions'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding transaction: {str(e)}', 'danger')
+    
+    return render_template('new_transaction.html', clients=clients, today=datetime.utcnow().date())
 
 @app.route('/transactions/report')
 @login_required
@@ -132,11 +137,9 @@ def transactions_report():
 @login_required
 def accounts():
     try:
-        # Get the current user's department
-        department = current_user.department if hasattr(current_user, 'department') else 'Administration'
-        
-        # Render the template with the department information
-        return render_template('accounts_standalone.html', department=department)
+        # Get all clients for the initial page load
+        clients = Client.query.order_by(Client.name).all()
+        return render_template('accounts.html', clients=clients)
     except Exception as e:
         app.logger.error(f"Error in accounts route: {str(e)}")
         return render_template('error.html', error="An error occurred while loading the accounts page"), 500

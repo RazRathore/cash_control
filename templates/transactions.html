@@ -1,700 +1,256 @@
-{% extends "base.html" %}
-
-{% block title %}Transactions - Jodhpur Mines Cash Control{% endblock %}
-
-{% block extra_css %}
-<style>
-    .transaction-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        gap: 15px;
-    }
-    
-    .search-container {
-        flex: 1;
-        min-width: 300px;
-        max-width: 500px;
-    }
-    
-    .search-input {
-        width: 100%;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 16px;
-    }
-    
-    .search-results {
-        position: absolute;
-        background: white;
-        width: 100%;
-        max-height: 350px;
-        overflow-y: auto;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        z-index: 1000;
-        display: none;
-        margin-top: 5px;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.2s ease-out;
-    }
-    
-    .search-results.active {
-        opacity: 1;
-        transform: translateY(0);
-        display: block;
-    }
-    
-    .search-result-item {
-        padding: 12px 20px;
-        cursor: pointer;
-        border-bottom: 1px solid #f5f5f5;
-        display: flex;
-        align-items: center;
-        transition: all 0.2s ease;
-        color: #333;
-    }
-    
-    .search-result-item:last-child {
-        border-bottom: none;
-    }
-    
-    .search-result-item:hover {
-        background-color: #f9f9f9;
-        padding-left: 25px;
-    }
-    
-    .search-result-item i {
-        margin-right: 12px;
-        color: #d4af37;
-        width: 20px;
-        text-align: center;
-    }
-    
-    .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.3s;
-    }
-    
-    .btn-primary {
-        background-color: #1a3a5e;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background-color: #0f2c4d;
-    }
-    
-    .date-filter {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-top: 15px;
-        flex-wrap: wrap;
-    }
-    
-    .date-input {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    
-    .transactions-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background: white;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .transactions-table th,
-    .transactions-table td {
-        padding: 12px 15px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .transactions-table th {
-        background-color: #f8f9fa;
-        font-weight: 600;
-    }
-    
-    .transactions-table tr:hover {
-        background-color: #f5f5f5;
-    }
-    
-    .credit-amount {
-        color: #28a745;
-    }
-    
-    .debit-amount {
-        color: #dc3545;
-    }
-    
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1050;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-    
-    .modal-content {
-        background-color: white;
-        margin: 10% auto;
-        padding: 25px;
-        border-radius: 8px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 16px;
-    }
-    
-    .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 25px;
-    }
-    
-    .btn-secondary {
-        background-color: #6c757d;
-        color: white;
-    }
-    
-    .btn-secondary:hover {
-        background-color: #5a6268;
-    }
-    
-    .hidden {
-        display: none;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="container" style="padding: 25px 30px; max-width: 1400px;">
-    <!-- Page Header -->
-    <div class="page-header" style="margin-bottom: 30px; border-bottom: 2px solid #f5f5f5; padding-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 10px;">
-            <div>
-                <h1 style="margin: 0; color: #1a3a5e; font-weight: 700; font-size: 28px; display: flex; align-items: center;">
-                    <i class="fas fa-exchange-alt" style="margin-right: 12px; color: #d4af37; font-size: 1.2em;"></i>
-                    Transaction Management
-                </h1>
-                <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 15px; padding-left: 34px;">
-                    Manage and track all financial transactions efficiently
-                </p>
-            </div>
-            <button id="addTransactionBtn" class="btn" 
-                    style="background: linear-gradient(135deg, #d4af37, #b8860b); 
-                           border: none; 
-                           color: #fff;
-                           padding: 12px 28px; 
-                           font-weight: 600;
-                           font-size: 15px;
-                           border-radius: 6px;
-                           box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-                           transition: all 0.3s ease;
-                           display: inline-flex;
-                           align-items: center;
-                           gap: 8px;
-                           cursor: pointer;
-                           white-space: nowrap;
-                           text-decoration: none;
-                           text-align: center;
-                           vertical-align: middle;
-                           line-height: 1.5;
-                           -webkit-user-select: none;
-                           -moz-user-select: none;
-                           -ms-user-select: none;
-                           user-select: none;
-                           border: 1px solid transparent;
-                           margin: 0;
-                           position: relative;
-                           overflow: hidden;
-                           z-index: 1;">
-                <i class="fas fa-plus-circle" style="font-size: 1.1em;"></i>
-                <span>Add New Transaction</span>
-                <span class="ripple" style="position: absolute; border-radius: 50%; background-color: rgba(255, 255, 255, 0.4); transform: scale(0); animation: ripple 0.6s linear; pointer-events: none;"></span>
-            </button>
-        </div>
-    </div>
-    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Jodhpur Mines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        @keyframes ripple {
-            to { transform: scale(4); opacity: 0; }
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
         }
-        
-        #addTransactionBtn:hover {
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('https://images.unsplash.com/photo-1533130090877-8530e6e5ad79?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
-        #addTransactionBtn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 15px;
         }
-        
-        #searchInput:focus {
-            border-color: #d4af37 !important;
-            box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25) !important;
+
+        .transactions-table th,
+        .transactions-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .transactions-table th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        .transactions-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .amount {
+            font-weight: 600;
+        }
+
+        .credit {
+            color: var(--success-color);
+        }
+
+        .debit {
+            color: var(--danger-color);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .no-transactions {
+            text-align: center;
+            padding: 50px 20px;
+            color: #6c757d;
+        }
+
+        .no-transactions i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+
+        .no-transactions p {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .alert-success {
+            background-color: var(--success-color);
+        }
+
+        .alert-danger {
+            background-color: var(--danger-color);
         }
     </style>
-    
-    <div class="transaction-actions" style="margin: 30px 0 20px;">
-        <div class="search-container" style="position: relative; max-width: 600px; margin: 0 auto;">
-            <div style="position: relative;">
-                <i class="fas fa-search" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #6c757d; z-index: 10; font-size: 16px;"></i>
-                <input type="text" 
-                       id="searchInput" 
-                       class="form-control" 
-                       placeholder="Search transactions by name, amount, or reference..." 
-                       value="{{ search_query }}"
-                       autocomplete="off"
-                       style="padding: 12px 20px 12px 48px; 
-                              height: 50px; 
-                              border-radius: 8px; 
-                              border: 2px solid #e0e0e0;
-                              font-size: 15px;
-                              transition: all 0.3s ease;
-                              box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-                              background-color: #fff;">
-                <button type="button" id="clearSearch" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #aaa; cursor: pointer; display: none;">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="searchResults" class="search-results" style="width: 100%; margin-top: 5px;"></div>
-            
-            {% if selected_contact %}
-            <div class="date-filter">
-                <input type="date" 
-                       id="startDate" 
-                       class="date-input" 
-                       value="{{ start_date or '' }}"
-                       max="{{ now }}">
-                <span>to</span>
-                <input type="date" 
-                       id="endDate" 
-                       class="date-input" 
-                       value="{{ end_date or '' }}"
-                       max="{{ now }}">
-                <button id="applyFilter" class="btn btn-primary">Apply</button>
-                <button id="clearFilter" class="btn btn-secondary">Clear</button>
-            </div>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-exchange-alt"></i> All Transactions</h1>
+            <a href="{{ url_for('new_transaction') }}" class="btn">
+                <i class="fas fa-plus"></i> New Transaction
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             {% endif %}
-        </div>
-        
-        <button id="addTransactionBtn" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add New Transaction
-        </button>
-    </div>
-    
-    <div class="table-responsive">
-        <table class="transactions-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th class="text-right">Credit (₹)</th>
-                    <th class="text-right">Debit (₹)</th>
-                    <th class="text-right">Balance (₹)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if transactions %}
-                    {% for tx in transactions %}
-                    <tr>
-                        <td>{{ tx.date.strftime('%d-%m-%Y') }}</td>
-                        <td>{{ tx.contact_name }}</td>
-                        <td>{{ tx.description }}</td>
-                        <td class="text-right credit-amount">
-                            {% if tx.credit %}{{ "%0.2f"|format(tx.credit) }}{% endif %}
-                        </td>
-                        <td class="text-right debit-amount">
-                            {% if tx.debit %}{{ "%0.2f"|format(tx.debit) }}{% endif %}
-                        </td>
-                        <td class="text-right">{{ "%0.2f"|format(tx.balance) }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            No transactions found. Start by adding a new transaction.
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Add Transaction Modal -->
-    <div id="transactionModal" class="modal">
-        <div class="modal-content">
-            <h2>Add New Transaction</h2>
-            <form id="transactionForm">
-                <input type="hidden" id="contactId" name="contact_id">
-                
-                <div class="form-group">
-                    <label for="contactName">Contact Name</label>
-                    <input type="text" id="contactName" class="form-control" required>
-                    <div id="contactSearchResults" class="search-results"></div>
+        {% endwith %}
 
-    <!-- Search and Filter Card -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
-        </div>
-        <div class="card-body">
-            <form id="searchForm" class="form-inline mb-3">
-                <div class="form-group mr-3 mb-2">
-                    <label for="searchQuery" class="sr-only">Search</label>
-                    <input type="text" class="form-control" id="searchQuery" name="q" placeholder="Search by name or phone" value="{{ search_query }}">
-                    <input type="hidden" id="contactId" name="contact_id" value="{{ selected_contact_id }}">
-                </div>
-                <div class="form-group mr-3 mb-2">
-                    <label for="startDate" class="mr-2">From:</label>
-                    <input type="date" class="form-control" id="startDate" name="start_date" value="{{ start_date or '' }}">
-                </div>
-                <div class="form-group mr-3 mb-2">
-                    <label for="endDate" class="mr-2">To:</label>
-                    <input type="date" class="form-control" id="endDate" name="end_date" value="{{ end_date or '' }}">
-                </div>
-                <button type="submit" class="btn btn-primary mb-2">
-                    <i class="fas fa-search"></i> Search
-                </button>
-            </form>
-            <div id="searchResults" class="list-group" style="display: none; position: absolute; z-index: 1000; width: 100%;">
-                <!-- Search results will be populated here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Transactions Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+        {% if transactions %}
+            <div style="overflow-x: auto;">
+                <table class="transactions-table">
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Name</th>
                             <th>Description</th>
-                            <th>Type</th>
-                            <th>Amount (₹)</th>
-                            <th>Balance (₹)</th>
+                            <th>Client</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Balance</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for tx in transactions %}
-                        <tr>
-                            <td>{{ tx.date.strftime('%d-%m-%Y') if tx.date else '' }}</td>
-                            <td>{{ tx.contact_name }}</td>
-                            <td>{{ tx.description or '' }}</td>
-                            <td>
-                                <span class="badge {{ 'badge-success' if tx.type == 'credit' else 'badge-danger' }}">
-                                    {{ 'Credit' if tx.type == 'credit' else 'Debit' }}
-                                </span>
-                            </td>
-                            <td class="text-right">{{ "{:,.2f}".format(tx.amount) }}</td>
-                            <td class="text-right font-weight-bold">{{ "{:,.2f}".format(tx.balance) }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center">No transactions found</td>
-                        </tr>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date.strftime('%d %b %Y') }}</td>
+                                <td>
+                                    <div style="font-weight: 500;">{{ transaction.name }}</div>
+                                    {% if transaction.description %}
+                                        <div style="font-size: 13px; color: #6c757d; margin-top: 3px;">
+                                            {{ transaction.description|truncate(50) }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.client %}
+                                        <span class="badge badge-success">
+                                            {{ transaction.client.name }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: #6c757d;">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="amount {% if transaction.debit_amount > 0 %}debit{% endif %}">
+                                    {% if transaction.debit_amount > 0 %}
+                                        ₹{{ "%d"|format(transaction.debit_amount // 100) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="amount {% if transaction.credit_amount > 0 %}credit{% endif %}">
+                                    {% if transaction.credit_amount > 0 %}
+                                        ₹{{ "%d"|format(transaction.credit_amount // 100) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="amount">
+                                    ₹{{ "%d"|format(transaction.balance // 100) }}
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
+        {% else %}
+            <div class="no-transactions">
+                <i class="fas fa-exchange-alt"></i>
+                <h3>No transactions found</h3>
+                <p>Get started by adding your first transaction</p>
+                <a href="{{ url_for('new_transaction') }}" class="btn">
+                    <i class="fas fa-plus"></i> Add Transaction
+                </a>
+            </div>
+        {% endif %}
     </div>
-</div>
-
-<!-- Add Transaction Modal -->
-<div class="modal fade" id="addTransactionModal" tabindex="-1" role="dialog" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addTransactionModalLabel">Add New Transaction</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="transactionForm">
-                    <div class="form-group">
-                        <label for="transactionDate">Date</label>
-                        <input type="date" class="form-control" id="transactionDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contactSearch">Contact</label>
-                        <input type="text" class="form-control" id="contactSearch" placeholder="Search or add new contact" required>
-                        <input type="hidden" id="contactId">
-                        <div id="contactSearchResults" class="list-group mt-2" style="display: none;">
-                            <!-- Contact search results will be populated here -->
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionType">Type</label>
-                        <select class="form-control" id="transactionType" required>
-                            <option value="credit">Credit (Money Received)</option>
-                            <option value="debit">Debit (Money Paid)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionAmount">Amount (₹)</label>
-                        <input type="number" class="form-control" id="transactionAmount" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transactionDescription">Description (Optional)</label>
-                        <textarea class="form-control" id="transactionDescription" rows="2"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <button class="btn btn-primary" id="saveTransaction">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Contact Modal -->
-<div class="modal fade" id="addContactModal" tabindex="-1" role="dialog" aria-labelledby="addContactModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addContactModalLabel">Add New Contact</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="contactForm">
-                    <div class="form-group">
-                        <label for="contactName">Name *</label>
-                        <input type="text" class="form-control" id="contactName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contactPhone">Phone</label>
-                        <input type="tel" class="form-control" id="contactPhone">
-                    </div>
-                    <div class="form-group">
-                        <label for="contactAddress">Address</label>
-                        <textarea class="form-control" id="contactAddress" rows="2"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                <button class="btn btn-primary" id="saveContact">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
-<script>
-$(document).ready(function() {
-    // Set today's date as default
-    const today = new Date().toISOString().split('T')[0];
-    $('#transactionDate').val(today);
-    
-    // Contact search functionality
-    let searchTimeout;
-    $('#contactSearch').on('input', function() {
-        clearTimeout(searchTimeout);
-        const query = $(this).val().trim();
-        
-        if (query.length < 2) {
-            $('#contactSearchResults').hide().empty();
-            return;
-        }
-        
-        searchTimeout = setTimeout(() => {
-            $.get('/api/contacts/search', { q: query }, function(data) {
-                const $results = $('#contactSearchResults');
-                $results.empty();
-                
-                if (data.length > 0) {
-                    data.forEach(function(contact) {
-                        $results.append(`
-                            <a href="#" class="list-group-item list-group-item-action contact-item" 
-                               data-id="${contact.id}">
-                                <strong>${contact.name}</strong>
-                                ${contact.phone ? `<br><small>${contact.phone}</small>` : ''}
-                            </a>
-                        `);
-                    });
-                } else {
-                    $results.append(`
-                        <div class="list-group-item">
-                            No contacts found. 
-                            <a href="#" id="addNewContact" data-dismiss="modal" data-toggle="modal" data-target="#addContactModal">
-                                Add new contact
-                            </a>
-                        </div>
-                    `);
-                }
-                
-                $results.show();
-            });
-        }, 300);
-    });
-    
-    // Handle contact selection
-    $(document).on('click', '.contact-item', function(e) {
-        e.preventDefault();
-        const contactId = $(this).data('id');
-        const contactName = $(this).find('strong').text();
-        
-        $('#contactId').val(contactId);
-        $('#contactSearch').val(contactName);
-        $('#contactSearchResults').hide();
-    });
-    
-    // Add new contact from search
-    $(document).on('click', '#addNewContact', function() {
-        const name = $('#contactSearch').val();
-        if (name) {
-            $('#contactName').val(name);
-        }
-    });
-    
-    // Save new contact
-    $('#saveContact').click(function() {
-        const contactData = {
-            name: $('#contactName').val(),
-            phone: $('#contactPhone').val(),
-            address: $('#contactAddress').val()
-        };
-        
-        if (!contactData.name) {
-            alert('Name is required');
-            return;
-        }
-        
-        $.ajax({
-            url: '/contact/new',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(contactData),
-            success: function(response) {
-                if (response.success) {
-                    // Update the contact selection
-                    $('#contactId').val(response.contact.id);
-                    $('#contactSearch').val(response.contact.name);
-                    $('#addContactModal').modal('hide');
-                    // Clear the form
-                    $('#contactForm')[0].reset();
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            },
-            error: function(xhr) {
-                alert('Error saving contact: ' + (xhr.responseJSON?.message || 'Unknown error'));
-            }
-        });
-    });
-    
-    // Save transaction
-    $('#saveTransaction').click(function() {
-        const transactionData = {
-            date: $('#transactionDate').val(),
-            contact_id: $('#contactId').val(),
-            type: $('#transactionType').val(),
-            amount: parseFloat($('#transactionAmount').val()),
-            description: $('#transactionDescription').val()
-        };
-        
-        // Basic validation
-        if (!transactionData.contact_id) {
-            alert('Please select or add a contact');
-            return;
-        }
-        
-        if (!transactionData.amount || transactionData.amount <= 0) {
-            alert('Please enter a valid amount');
-            return;
-        }
-        
-        $.ajax({
-            url: '/transaction/new',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(transactionData),
-            success: function(response) {
-                if (response.success) {
-                    // Reload the page to see the new transaction
-                    window.location.reload();
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            },
-            error: function(xhr) {
-                alert('Error saving transaction: ' + (xhr.responseJSON?.message || 'Unknown error'));
-            }
-        });
-    });
-    
-    // Initialize date picker
-    $('.datepicker').datepicker({
-        format: 'yyyy-mm-dd',
-        autoclose: true,
-        todayHighlight: true
-    });
-    
-    // Close dropdowns when clicking outside
-    $(document).click(function(event) {
-        if (!$(event.target).closest('#searchQuery, #searchResults').length) {
-            $('#searchResults').hide();
-        }
-        if (!$(event.target).closest('#contactSearch, #contactSearchResults').length) {
-            $('#contactSearchResults').hide();
-        }
-    });
-    
-    // Search form submission
-    $('#searchForm').on('submit', function(e) {
-        e.preventDefault();
-        const formData = $(this).serialize();
-        window.location.href = '/transactions?' + formData;
-    });
-});
-</script>
-{% endblock %}
+</body>
+</html>
