@@ -363,6 +363,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label for="clientSearch" class="form-label">Client</label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control" id="clientSearch" placeholder="Search or type client name..." autocomplete="off" onkeydown="event.stopPropagation()" onkeyup="event.stopPropagation()" onkeypress="event.stopPropagation()">
+                                <input type="hidden" id="clientId">
+                                <div id="clientResults" class="dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; z-index: 1050;">
+                                    <!-- Client search results will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label for="transactionAmount" class="form-label">Amount</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
@@ -402,8 +412,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Set today's date as default
+        // Client search functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('transactionDate').value = today;
 
@@ -412,6 +423,127 @@
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            // Client search elements
+            const clientSearch = document.getElementById('clientSearch');
+            const clientResults = document.getElementById('clientResults');
+            const clientIdInput = document.getElementById('clientId');
+            let searchTimeout;
+            let isTyping = false;
+
+            if (clientSearch) {
+                // Show dropdown when input is focused
+                clientSearch.addEventListener('focus', function() {
+                    if (clientSearch.value.trim().length > 0) {
+                        clientResults.style.display = 'block';
+                    }
+                });
+                
+                // Handle search input and allow free typing
+                clientSearch.addEventListener('input', function(e) {
+                    isTyping = true;
+                    clientIdInput.value = ''; // Clear any previously selected client ID
+                    const query = this.value.trim();
+                    
+                    // Clear any existing timeout
+                    clearTimeout(searchTimeout);
+                    
+                    // If query is too short, hide results and return
+                    if (query.length < 2) {
+                        clientResults.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show loading state
+                    clientResults.innerHTML = '<div class="dropdown-item">Searching clients...</div>';
+                    clientResults.style.display = 'block';
+                    
+                    // Set a timeout to avoid making too many API calls
+                    searchTimeout = setTimeout(() => {
+                        // Make API call to search for clients
+                        fetch(`/api/clients/search?q=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(clients => {
+                                clientResults.innerHTML = '';
+                                
+                                if (clients.length === 0) {
+                                    const noResults = document.createElement('div');
+                                    noResults.className = 'dropdown-item';
+                                    noResults.textContent = 'No clients found';
+                                    clientResults.appendChild(noResults);
+                                    return;
+                                }
+                                
+                                clients.forEach(client => {
+                                    const clientItem = document.createElement('a');
+                                    clientItem.className = 'dropdown-item';
+                                    clientItem.href = '#';
+                                    clientItem.textContent = client.name;
+                                    clientItem.dataset.id = client.id;
+                                    
+                                    clientItem.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        clientSearch.value = client.name;
+                                        clientIdInput.value = client.id;
+                                        clientResults.style.display = 'none';
+                                        isTyping = false;
+                                    });
+                                    
+                                    clientResults.appendChild(clientItem);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error searching clients:', error);
+                                clientResults.innerHTML = '<div class="dropdown-item text-danger">Error searching clients</div>';
+                            });
+                    }, 300); // 300ms debounce time
+                });
+                
+                // Hide dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!clientSearch.contains(e.target) && !clientResults.contains(e.target)) {
+                        clientResults.style.display = 'none';
+                    }
+                });
+                
+                // Handle keyboard navigation
+                clientSearch.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        clientResults.style.display = 'none';
+                    } else if (e.key === 'ArrowDown' && clientResults.children.length > 0) {
+                        e.preventDefault();
+                        const firstItem = clientResults.querySelector('a');
+                        if (firstItem) firstItem.focus();
+                    }
+                });
+                
+                // Handle keyboard navigation in dropdown
+                if (clientResults) {
+                    clientResults.addEventListener('keydown', function(e) {
+                        const current = document.activeElement;
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const next = current.nextElementSibling || clientResults.firstElementChild;
+                            if (next) next.focus();
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const prev = current.previousElementSibling || clientResults.lastElementChild;
+                            if (prev) prev.focus();
+                            if (prev === clientResults.lastElementChild) {
+                                clientSearch.focus();
+                            }
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (current.tagName === 'A') {
+                                current.click();
+                            }
+                        } else if (e.key === 'Escape') {
+                            clientResults.style.display = 'none';
+                            clientSearch.focus();
+                        }
+                    });
+                }
+            }
         });
 
         // Add ripple effect to buttons
@@ -579,28 +711,51 @@
         document.getElementById('saveTransaction')?.addEventListener('click', function() {
             const form = document.getElementById('transactionForm');
             if (form.checkValidity()) {
-                // Here you would typically send the data to your server
-                const formData = {
-                    type: document.getElementById('transactionType').value,
-                    amount: document.getElementById('transactionAmount').value,
-                    date: document.getElementById('transactionDate').value,
-                    category: document.getElementById('transactionCategory').value,
-                    description: document.getElementById('transactionDescription').value
-                };
+                // Get form data
+                const formData = new FormData();
+                formData.append('type', document.getElementById('transactionType').value);
+                formData.append('amount', document.getElementById('transactionAmount').value);
+                formData.append('date', document.getElementById('transactionDate').value);
+                formData.append('category', document.getElementById('transactionCategory').value);
+                formData.append('description', document.getElementById('transactionDescription').value || '');
                 
-                console.log('Form submitted:', formData);
+                // Add client ID if selected
+                const clientId = document.getElementById('clientId').value;
+                if (clientId) {
+                    formData.append('client_id', clientId);
+                }
                 
-                // Show success message
-                alert('Transaction added successfully!');
-                
-                // Close the modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
-                modal.hide();
-                
-                // Reset the form
-                form.reset();
-                
-                // Here you would typically refresh the transactions list
+                // Send data to server
+                fetch('/transactions/new', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        alert('Transaction added successfully!');
+                        
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
+                        modal.hide();
+                        
+                        // Reset the form
+                        form.reset();
+                        
+                        // Reload the page to show the new transaction
+                        window.location.reload();
+                    } else {
+                        throw new Error(data.message || 'Failed to add transaction');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + error.message);
+                });
             } else {
                 // If the form is invalid, trigger the browser's native validation
                 form.reportValidity();

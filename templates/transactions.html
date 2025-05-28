@@ -480,9 +480,7 @@
                             <th>Date</th>
                             <th>Client</th>
                             <th>Description</th>
-                            <th>Debit</th>
                             <th>Credit</th>
-                            <th>Balance</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -506,15 +504,6 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ transaction.description or '-' }}</td>
-                                <td class="{% if transaction.debit_amount > 0 %}debit-amount{% else %}text-muted{% endif %}">
-                                    <div class="amount-cell">
-                                        {% if transaction.debit_amount > 0 %}
-                                            ₹{{ "{0:,}".format(transaction.debit_amount // 100) }}
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </div>
-                                </td>
                                 <td class="{% if transaction.credit_amount > 0 %}credit-amount{% else %}text-muted{% endif %}">
                                     <div class="amount-cell">
                                         {% if transaction.credit_amount > 0 %}
@@ -522,11 +511,6 @@
                                         {% else %}
                                             -
                                         {% endif %}
-                                    </div>
-                                </td>
-                                <td class="font-monospace">
-                                    <div class="amount-cell" style="font-weight: 500; color: {% if transaction.balance > 0 %}#28a745{% elif transaction.balance < 0 %}#dc3545{% else %}#6c757d{% endif %};">
-                                        ₹{{ "{0:,.2f}".format(transaction.balance / 100) }}
                                     </div>
                                 </td>
                             </tr>

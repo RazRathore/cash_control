@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - Jodhpur Mines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .page-title {
+            color: var(--primary-color);
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--secondary-color);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn i {
+            font-size: 14px;
+        }
+
+        .expenses-table {
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 500;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-row:hover {
+            background-color: #f9f9f9;
+        }
+
+        .amount {
+            font-weight: 500;
+            color: #e74c3c;
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status.paid {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.pending {
+            background: #fff8e1;
+            color: #ff8f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Expenses</h1>
+            <div class="header-actions">
+                <a href="{{ url_for('home') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+                <a href="#" class="btn" id="addExpenseBtn">
+                <i class="fas fa-plus"></i> Add New Expense
+                </a>
+            </div>
+        </div>
+
+        <div class="recent-expenses" style="margin-top: 30px;">
+            <h2 style="color: var(--primary-color); margin-bottom: 20px; font-size: 1.5rem;">Recent Expenses</h2>
+            <div class="expenses-table">
+                <div class="table-header">
+                    <div style="flex: 1;">Date</div>
+                    <div style="flex: 2;">Client Name</div>
+                    <div style="flex: 1;">Initial Balance</div>
+                    <div style="flex: 3;">Description</div>
+                </div>
+                
+                {% if recent_expenses %}
+                    {% for expense in recent_expenses %}
+                    <div class="table-row">
+                        <div style="flex: 1;">{{ expense.date.split('T')[0] }}</div>
+                        <div style="flex: 2; font-weight: 500;">{{ expense.name }}</div>
+                        <div style="flex: 1;">₹{{ "%.2f"|format(expense.initialBalance) }}</div>
+                        <div style="flex: 3; position: relative;">
+                            <div class="expense-summary">
+                                {% set items = expense.get('items', []) %}
+                                {% if items and items|length > 0 %}
+                                    {{ items[0].get('description', '') }}
+                                    {% if items|length > 1 %}
+                                        <span class="text-muted">+{{ items|length - 1 }} more items</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No items</span>
+                                {% endif %}
+                                <button class="show-more-btn" 
+                                        data-client="{{ expense.get('name', '') }}" 
+                                        style="background: none; border: none; color: var(--secondary-color); cursor: pointer; margin-left: 10px; font-weight: 500;">
+                                    Show More
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="table-row" style="text-align: center; padding: 20px;">
+                        <div style="grid-column: 1 / -1; color: #666;">No expenses recorded yet. Add your first expense to get started!</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Client Expenses Modal -->
+        <div id="clientExpensesModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+            <div class="modal-content" style="background-color: #fefefe; margin: 5% auto; padding: 25px; border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fefefe; z-index: 10;">
+                    <h2 id="clientNameHeader" style="margin: 0; color: var(--primary-color);">Client Expenses</h2>
+                    <span class="close-client-modal" style="font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
+                </div>
+                <div id="clientExpensesList">
+                    <!-- Client expenses will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="expenseModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 10% auto; padding: 25px; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                <h2 style="margin: 0; color: var(--primary-color);">Add New Expense</h2>
+                <span class="close" style="font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
+            </div>
+            
+            <form id="expenseForm">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="expenseName" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Name</label>
+                    <input type="text" id="expenseName" class="form-control" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="initialBalance" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--primary-color);">Initial Balance (₹)</label>
+                    <input type="number" id="initialBalance" class="form-control" step="0.01" min="0" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                
+                <div id="expenseItems" style="margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: var(--primary-color); font-size: 16px;">Expense Items</h3>
+                        <button type="button" id="addItemBtn" style="background: var(--secondary-color); color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <div class="expense-item" style="display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;">
+                        <div style="flex: 2;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #555;">Description</label>
+                            <input type="text" name="descriptions[]" class="form-control" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #555;">Amount (₹)</label>
+                            <input type="number" name="amounts[]" class="form-control amount-input" step="0.01" min="0.01" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <button type="button" class="remove-item-btn" style="background: #ff6b6b; color: white; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <button type="button" id="cancelExpense" style="padding: 8px 20px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" style="padding: 8px 25px; background: var(--secondary-color); color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Save Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .expense-summary {
+            display: flex;
+            align-items: center;
+        }
+        .text-muted {
+            color: #6c757d;
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+        .client-expense-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .client-expense-item:last-child {
+            border-bottom: none;
+        }
+        .expense-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Client Expenses Modal Elements
+            const clientModal = document.getElementById('clientExpensesModal');
+            const closeClientModal = document.querySelector('.close-client-modal');
+            const clientExpensesList = document.getElementById('clientExpensesList');
+            const clientNameHeader = document.getElementById('clientNameHeader');
+            
+            // Show client expenses modal
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('show-more-btn')) {
+                    const clientName = e.target.getAttribute('data-client');
+                    showClientExpenses(clientName);
+                }
+            });
+            
+            // Close client modal
+            closeClientModal.addEventListener('click', function() {
+                clientModal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === clientModal) {
+                    clientModal.style.display = 'none';
+                }
+            });
+            
+            // Function to show client expenses
+            function showClientExpenses(clientName) {
+                clientNameHeader.textContent = `${clientName}'s Expenses`;
+                clientExpensesList.innerHTML = '<p>Loading...</p>';
+                
+                // Fetch client expenses from the API
+                fetch(`/api/expenses/client/${encodeURIComponent(clientName)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data.length > 0) {
+                            renderClientExpenses(data.data);
+                        } else {
+                            clientExpensesList.innerHTML = '<p>No expenses found for this client.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching client expenses:', error);
+                        clientExpensesList.innerHTML = '<p>Error loading expenses. Please try again.</p>';
+                    });
+                
+                clientModal.style.display = 'block';
+            }
+            
+            // Function to render client expenses
+            function renderClientExpenses(expenses) {
+                clientExpensesList.innerHTML = '';
+                
+                expenses.forEach(expense => {
+                    const expenseDate = new Date(expense.date).toLocaleDateString();
+                    const totalAmount = expense.items.reduce((sum, item) => sum + item.amount, 0);
+                    const remainingBalance = expense.initialBalance - totalAmount;
+                    
+                    const expenseElement = document.createElement('div');
+                    expenseElement.className = 'client-expense-item';
+                    expenseElement.innerHTML = `
+                        <div><strong>Date:</strong> ${expenseDate}</div>
+                        <div><strong>Initial Balance:</strong> ₹${expense.initialBalance.toFixed(2)}</div>
+                        <div><strong>Total Expenses:</strong> ₹${totalAmount.toFixed(2)}</div>
+                        <div><strong>Remaining Balance:</strong> ₹${remainingBalance.toFixed(2)}</div>
+                        <div style="margin-top: 10px;">
+                            <strong>Items:</strong>
+                            <ul style="margin: 5px 0 0 20px;">
+                                ${expense.items.map(item => 
+                                    `<li>${item.description}: ₹${item.amount.toFixed(2)}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                        <div class="expense-details">
+                            <span>Added on: ${new Date(expense.date).toLocaleString()}</span>
+                        </div>
+                    `;
+                    
+                    clientExpensesList.appendChild(expenseElement);
+                });
+            }
+            const modal = document.getElementById('expenseModal');
+            const addBtn = document.getElementById('addExpenseBtn');
+            const closeBtn = document.querySelector('.close');
+            const cancelBtn = document.getElementById('cancelExpense');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const expenseItems = document.getElementById('expenseItems');
+            const expenseForm = document.getElementById('expenseForm');
+            
+            // Open modal when Add Expense button is clicked
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                modal.style.display = 'block';
+            });
+            
+            // Close modal when X is clicked
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // Close modal when Cancel button is clicked
+            cancelBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside the modal content
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Add new expense item row
+            function addNewExpenseItem() {
+                const newItem = document.createElement('div');
+                newItem.className = 'expense-item';
+                newItem.style = 'display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end;';
+                newItem.innerHTML = `
+                    <div style="flex: 2;">
+                        <input type="text" name="descriptions[]" class="form-control" required 
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" name="amounts[]" class="form-control amount-input" 
+                               step="0.01" min="0.01" required 
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <button type="button" class="remove-item-btn" 
+                            style="background: #ff6b6b; color: white; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                // Add the new item before the Add Item button
+                const addButtonRow = document.querySelector('#expenseItems > div:first-child');
+                expenseItems.insertBefore(newItem, addButtonRow.nextSibling);
+                
+                // Add event listener to the new remove button
+                newItem.querySelector('.remove-item-btn').addEventListener('click', function() {
+                    newItem.remove();
+                });
+            }
+            
+            // Add item when Add Item button is clicked
+            addItemBtn.addEventListener('click', addNewExpenseItem);
+            
+            // Handle form submission
+            expenseForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form data
+                const expenseName = document.getElementById('expenseName').value;
+                const initialBalance = parseFloat(document.getElementById('initialBalance').value);
+                const descriptions = Array.from(document.getElementsByName('descriptions[]')).map(input => input.value);
+                const amounts = Array.from(document.getElementsByName('amounts[]')).map(input => parseFloat(input.value));
+                
+                // Create expense items array
+                const expenseItems = [];
+                for (let i = 0; i < descriptions.length; i++) {
+                    if (descriptions[i] && !isNaN(amounts[i])) {
+                        expenseItems.push({
+                            description: descriptions[i],
+                            amount: amounts[i]
+                        });
+                    }
+                }
+                
+                // Create the expense object
+                const expenseData = {
+                    name: expenseName,
+                    initialBalance: initialBalance,
+                    items: expenseItems,
+                    totalAmount: expenseItems.reduce((sum, item) => sum + item.amount, 0),
+                    remainingBalance: initialBalance - expenseItems.reduce((sum, item) => sum + item.amount, 0)
+                };
+                
+                // Send data to server
+                fetch('/api/expenses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(expenseData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to show the new expense
+                        window.location.reload();
+                    } else {
+                        alert('Error saving expense: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving expense. Please check the console for details.');
+                });
+                
+                // Close the modal and reset the form
+                modal.style.display = 'none';
+                expenseForm.reset();
+                
+                // Reset to one empty item
+                const items = document.querySelectorAll('.expense-item');
+                for (let i = 1; i < items.length; i++) {
+                    items[i].remove();
+                }
+            });
+            
+            // Add event listeners to existing remove buttons
+            document.querySelectorAll('.remove-item-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.expense-item').remove();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

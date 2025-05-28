@@ -10,7 +10,20 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.String(20), unique=True, nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
-    client_type = db.Column(db.Enum('Individual', 'Corporate', name='client_type'), nullable=False, default='Individual')
+    _client_type = db.Column('client_type', db.Enum('Individual', 'Corporate', name='client_type'), nullable=False, default='Individual')
+    
+    @property
+    def client_type(self):
+        return self._client_type
+    
+    @client_type.setter
+    def client_type(self, value):
+        # Normalize the client type to match the enum values
+        if value:
+            value = value.strip().title()
+            if value not in ['Individual', 'Corporate']:
+                value = 'Individual'  # Default to Individual if invalid
+        self._client_type = value
     email = db.Column(db.String(120), unique=True, nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     address = db.Column(db.Text, nullable=True)
@@ -18,7 +31,20 @@ class Client(db.Model):
     state = db.Column(db.String(50), nullable=True)
     country = db.Column(db.String(50), nullable=True, default='India')
     postal_code = db.Column(db.String(20), nullable=True)
-    status = db.Column(db.Enum('Active', 'Pending', 'Inactive', name='client_status'), default='Active')
+    _status = db.Column('status', db.Enum('Active', 'Pending', 'Inactive', name='client_status'), default='Active')
+    
+    @property
+    def status(self):
+        return self._status
+    
+    @status.setter
+    def status(self, value):
+        # Normalize the status to match the enum values
+        if value:
+            value = value.strip().title()
+            if value not in ['Active', 'Pending', 'Inactive']:
+                value = 'Active'  # Default to Active if invalid
+        self._status = value
     balance = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -174,15 +174,9 @@
                 <textarea class="form-control" id="description" name="description" rows="3" placeholder="Add any additional information about this transaction"></textarea>
             </div>
 
-            <div class="form-row">
-                <div class="form-group form-col">
-                    <label for="debit_amount">Debit Amount (₹)</label>
-                    <input type="number" class="form-control" id="debit_amount" name="debit_amount" min="0" step="1" placeholder="0" value="0">
-                </div>
-                <div class="form-group form-col">
-                    <label for="credit_amount">Credit Amount (₹)</label>
-                    <input type="number" class="form-control" id="credit_amount" name="credit_amount" min="0" step="1" placeholder="0" value="0">
-                </div>
+            <div class="form-group">
+                <label for="credit_amount">Amount (₹)</label>
+                <input type="number" class="form-control" id="credit_amount" name="credit_amount" min="0" step="1" placeholder="Enter amount" required>
             </div>
 
             <div class="form-group">
@@ -197,22 +191,16 @@
     </div>
 
     <script>
-        // Ensure only one of debit or credit has a value
+        // Simple form validation
         document.addEventListener('DOMContentLoaded', function() {
-            const debitInput = document.getElementById('debit_amount');
-            const creditInput = document.getElementById('credit_amount');
+            const form = document.querySelector('form');
+            const amountInput = document.getElementById('credit_amount');
             
-            function validateAmounts() {
-                if (parseFloat(debitInput.value) > 0 && parseFloat(creditInput.value) > 0) {
-                    alert('Please enter either a debit OR a credit amount, not both.');
-                    return false;
-                }
-                return true;
-            }
-            
-            document.querySelector('form').addEventListener('submit', function(e) {
-                if (!validateAmounts()) {
+            form.addEventListener('submit', function(e) {
+                if (parseFloat(amountInput.value) <= 0) {
+                    alert('Please enter a valid amount greater than 0.');
                     e.preventDefault();
+                    amountInput.focus();
                 }
             });
         });

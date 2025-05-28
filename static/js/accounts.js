@@ -45,6 +45,56 @@ let currentFilters = {
     search: ''
 };
 
+// Search functionality
+function initializeSearch() {
+    const searchInput = document.getElementById('clientSearch');
+    const searchButton = document.getElementById('searchButton');
+    const clearSearchButton = document.getElementById('clearSearch');
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+        currentFilters.search = searchInput.value.trim();
+        currentPage = 1; // Reset to first page when searching
+        updateSearchInfo();
+        loadClients();
+    });
+
+    // Handle Enter key in search input
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            currentFilters.search = searchInput.value.trim();
+            currentPage = 1;
+            updateSearchInfo();
+            loadClients();
+        }
+    });
+
+    // Handle clear search
+    clearSearchButton.addEventListener('click', () => {
+        searchInput.value = '';
+        currentFilters.search = '';
+        currentPage = 1;
+        updateSearchInfo();
+        loadClients();
+    });
+
+    // Update search info text
+    function updateSearchInfo() {
+        if (!searchResultsInfo) return;
+        
+        if (currentFilters.search) {
+            searchResultsInfo.textContent = `Search results for: "${currentFilters.search}"`;
+            searchResultsInfo.classList.remove('text-muted');
+            searchResultsInfo.classList.add('text-primary', 'fw-bold');
+        } else {
+            searchResultsInfo.textContent = 'Showing all clients';
+            searchResultsInfo.classList.remove('text-primary', 'fw-bold');
+            searchResultsInfo.classList.add('text-muted');
+        }
+    }
+}
+
 // DOM Elements
 const clientsTableBody = document.getElementById('clientsTableBody');
 const loadingState = document.getElementById('loadingState');
@@ -95,25 +145,33 @@ async function loadClients() {
             ...(currentFilters.search && { search: currentFilters.search })
         });
 
+        console.log('Fetching clients with params:', params.toString());
         const response = await fetch(`${API_BASE_URL}/clients?${params}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('Received data:', data);
 
         if (data && data.success) {
             renderClients(data.data || []);
             if (data.pagination) {
-                updatePagination(data.pagination);
+                console.log('Updating pagination with:', data.pagination);
+                updatePagination({
+                    total: data.pagination.total,
+                    per_page: data.pagination.per_page,
+                    page: data.pagination.page,
+                    pages: data.pagination.pages
+                });
             } else {
                 console.warn('No pagination data received from server');
                 // Initialize with default pagination
                 updatePagination({
                     total: data.data ? data.data.length : 0,
                     per_page: ITEMS_PER_PAGE,
-                    current_page: currentPage,
-                    last_page: Math.ceil((data.data ? data.data.length : 0) / ITEMS_PER_PAGE)
+                    page: currentPage,
+                    pages: Math.ceil((data.data ? data.data.length : 0) / ITEMS_PER_PAGE) || 1
                 });
             }
         } else {
@@ -136,38 +194,19 @@ function renderClients(clients) {
     }
 
     clientsTableBody.innerHTML = clients.map(client => {
-        // Format balance with proper currency
-        const formattedBalance = formatCurrency(client.balance || 0);
-        
-        // Determine status badge class
-        const statusClass = getStatusBadgeClass(client.status || 'Active');
-        
-        // Format last updated time
-        const lastUpdated = client.updated_at ? new Date(client.updated_at).toLocaleString() : 'N/A';
-        
         return `
         <tr data-client-id="${client.id}">
             <td>${client.client_id || 'N/A'}</td>
             <td>
                 <div class="d-flex align-items-center">
-                    <div class="avatar-sm me-2">
+                    <div class="me-2">
                         <i class="fas ${client.client_type === 'Corporate' ? 'fa-building' : 'fa-user-tie'}"></i>
                     </div>
-                    <div>
-                        <div class="fw-bold">${escapeHtml(client.name || 'Unnamed Client')}</div>
-                        <small class="text-muted">${client.client_type || 'N/A'}</small>
-                    </div>
+                    <div class="fw-bold">${escapeHtml(client.name || 'Unnamed Client')}</div>
                 </div>
             </td>
-            <td>${client.email || 'N/A'}</td>
             <td>${client.phone || 'N/A'}</td>
-            <td>
-                <span class="badge ${statusClass}">
-                    ${client.status || 'Active'}
-                </span>
-            </td>
-            <td class="text-end">${formattedBalance}</td>
-            <td class="text-muted small">${lastUpdated}</td>
+            <td>${client.email || 'N/A'}</td>
             <td class="text-end">
                 <div class="btn-group btn-group-sm">
                     <button class="btn btn-sm btn-outline-primary view-client" 
@@ -237,7 +276,7 @@ function updatePagination(pagination) {
             return;
         }
         
-        const { total = 0, per_page = ITEMS_PER_PAGE, current_page = 1, last_page = 1 } = pagination || {};
+        const { total = 0, per_page = ITEMS_PER_PAGE, page: current_page = 1, pages: last_page = 1 } = pagination;
         const paginationContainer = document.getElementById('paginationContainer');
         const paginationInfo = document.getElementById('paginationInfo');
         const paginationEl = document.getElementById('pagination');
@@ -246,6 +285,8 @@ function updatePagination(pagination) {
             console.warn('Pagination elements not found in the DOM');
             return;
         }
+        
+        console.log('Updating pagination with:', { total, per_page, current_page, last_page });
         
         // Update pagination info
         const start = Math.min(((current_page - 1) * per_page) + 1, total);
@@ -259,7 +300,12 @@ function updatePagination(pagination) {
         if (endItem) endItem.textContent = end;
         if (totalItems) totalItems.textContent = total;
         
-        // Update pagination controls
+        // Update total pages in the pagination info
+        if (paginationInfo) {
+            paginationInfo.dataset.totalPages = last_page;
+        }
+        
+        // Clear existing pagination
         paginationEl.innerHTML = '';
         
         // Only show pagination if there are multiple pages
@@ -268,6 +314,7 @@ function updatePagination(pagination) {
             return;
         }
         
+        // Show pagination container
         paginationContainer.style.display = 'flex';
         
         // Previous button
@@ -318,6 +365,8 @@ function updatePagination(pagination) {
             if (current_page < last_page) goToPage(current_page + 1);
         });
         paginationEl.appendChild(nextLi);
+        
+        console.log('Pagination updated successfully');
     } catch (error) {
         console.error('Error updating pagination:', error);
     }
@@ -414,8 +463,8 @@ function goToPreviousPage() {
 }
 
 function getTotalPages() {
-    const paginationInfo = document.querySelector('.pagination-info');
-    return paginationInfo ? parseInt(paginationInfo.dataset.totalPages) : 1;
+    const paginationInfo = document.getElementById('paginationInfo');
+    return paginationInfo ? parseInt(paginationInfo.dataset.totalPages) || 1 : 1;
 }
 
 // Client actions
@@ -650,19 +699,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialize DataTable with custom sorting
-    if (typeof $.fn.DataTable === 'function' && document.getElementById('clientsTable')) {
-        $('#clientsTable').DataTable({
-            pageLength: ITEMS_PER_PAGE,
-            lengthChange: false,
-            searching: false,
-            info: false,
-            order: [[0, 'desc']], // Default sort by ID descending
-            columnDefs: [
-                { orderable: false, targets: -1 } // Disable sorting on actions column
-            ]
-        });
+    // Initialize sortable columns
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => handleSort(header.dataset.sort));
+    });
+    
+    // Initialize search functionality
+    if (document.getElementById('clientSearch')) {
+        initializeSearch();
     }
+    
+    // Load initial data
+    loadClients();
 });
 
 // UI Helpers

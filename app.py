@@ -14,7 +14,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mining_ledger.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mining_ledger.db?check_same_thread=False&timeout=30'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
@@ -216,13 +216,38 @@ def transactions_report():
 @app.route('/accounts')
 @login_required
 def accounts():
+    return render_template('accounts_standalone.html')
+
+# In-memory storage for expenses (replace with database in production)
+expenses_db = []
+
+@app.route('/expenses')
+@login_required
+def expenses():
+    # Get the 10 most recent expenses
+    recent_expenses = sorted(expenses_db, key=lambda x: x.get('date', ''), reverse=True)[:10]
+    return render_template('expenses.html', recent_expenses=recent_expenses)
+
+@app.route('/api/expenses', methods=['POST'])
+@login_required
+def add_expense():
     try:
-        # Get all clients for the initial page load
-        clients = Client.query.order_by(Client.name).all()
-        return render_template('accounts.html', clients=clients)
+        data = request.get_json()
+        data['id'] = len(expenses_db) + 1
+        data['date'] = datetime.now(timezone.utc).isoformat()
+        expenses_db.append(data)
+        return jsonify({"success": True, "message": "Expense added successfully"})
     except Exception as e:
-        app.logger.error(f"Error in accounts route: {str(e)}")
-        return render_template('error.html', error="An error occurred while loading the accounts page"), 500
+        return jsonify({"success": False, "message": str(e)}), 400
+
+@app.route('/api/expenses/client/<client_name>', methods=['GET'])
+@login_required
+def get_client_expenses(client_name):
+    try:
+        client_expenses = [exp for exp in expenses_db if exp.get('name') == client_name]
+        return jsonify({"success": True, "data": client_expenses})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
 
 # API Routes for Clients
 @app.route('/api/clients', methods=['GET'])
@@ -239,9 +264,9 @@ def get_clients():
         client_type = request.args.get('type')
         search = request.args.get('search', '').strip()
         
-        # Sorting
-        sort_by = request.args.get('sort_by', 'id')
-        sort_order = request.args.get('sort_order', 'asc')
+        # Sorting - default to showing most recently added first
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
         
         # Build query
         query = Client.query
@@ -292,16 +317,48 @@ def get_clients():
         app.logger.error(f"Error fetching clients: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to fetch clients'}), 500
 
+@app.route('/api/clients/search', methods=['GET'])
+@login_required
+def search_clients():
+    """Search for clients by name"""
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([])
+    
+    # Search for clients where the name contains the query (case-insensitive)
+    clients = Client.query.filter(Client.name.ilike(f'%{query}%'))\
+                         .order_by(Client.name)\
+                         .limit(10)\
+                         .all()
+    
+    return jsonify([{
+        'id': client.id,
+        'name': client.name,
+        'phone': client.phone or '',
+        'email': client.email or ''
+    } for client in clients])
+
 @app.route('/api/clients/<int:client_id>', methods=['GET'])
 @login_required
 def get_client(client_id):
     """Get a single client by ID"""
-    try:
-        client = Client.query.get_or_404(client_id)
-        return jsonify({'success': True, 'data': client.to_dict()}), 200
-    except Exception as e:
-        app.logger.error(f"Error fetching client {client_id}: {str(e)}")
-        return jsonify({'success': False, 'error': 'Client not found'}), 404
+    client = Client.query.get_or_404(client_id)
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': client.id,
+            'client_id': client.client_id,
+            'name': client.name,
+            'phone': client.phone,
+            'email': client.email,
+            'address': client.address,
+            'client_type': client.client_type or 'Individual',
+            'status': client.status or 'Active',
+            'balance': float(client.balance or 0),
+            'created_at': client.created_at.isoformat() if client.created_at else None,
+            'updated_at': client.updated_at.isoformat() if client.updated_at else None
+        }
+    }), 200
 
 @app.route('/api/clients', methods=['POST'])
 @login_required

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ client.name }} - Client Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a3a5e;
+            --secondary-color: #d4af37;
+            --accent-color: #b8860b;
+            --light-color: #f5f5f5;
+            --dark-color: #1a1a1a;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                        url('https://images.unsplash.com/photo-1533130090877-8530e6e5ad79?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: #0d2a4a;
+            color: white;
+        }
+
+        .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .client-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .client-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .transactions-table th,
+        .transactions-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .transactions-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+        }
+
+        .transactions-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .amount {
+            font-weight: 500;
+        }
+
+        .amount.credit {
+            color: #28a745;
+        }
+
+        .amount.debit {
+            color: #dc3545;
+        }
+
+        .status-active {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .status-inactive {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .no-transactions {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Details - Cash Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: #4a6cf7;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+        .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        .client-header h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+        .status-active, .status-inactive {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status-inactive {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .info-card h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .info-item {
+            margin-bottom: 1rem;
+        }
+        .info-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        .info-value {
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .balance-amount {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .balance-positive {
+            color: #2e7d32;
+        }
+        .balance-negative {
+            color: #c62828;
+        }
+        .balance-zero {
+            color: #6c757d;
+        }
+        .transactions-table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+        }
+        .transactions-table th,
+        .transactions-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .transactions-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        .transaction-credit {
+            color: #2e7d32;
+            font-weight: 500;
+        }
+        .transaction-debit {
+            color: #c62828;
+            font-weight: 500;
+        }
+        .no-transactions {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .btn-edit {
+            background-color: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-edit:hover {
+            background-color: #3a5bd9;
+            color: white;
+        }
+        .btn-print {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-right: 0.5rem;
+        }
+        .btn-print:hover {
+            background-color: #5a6268;
+            color: white;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if error %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+            </div>
+        {% endif %}
+        
+        <a href="{{ url_for('accounts') }}" class="back-btn no-print">
+            <i class="fas fa-arrow-left"></i> Back to Accounts
+        </a>
+
+        {% if not client %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> Client not found or could not be loaded.
+            </div>
+        {% else %}
+            <div class="client-header">
+                <h1><i class="fas fa-user"></i> {{ client.name or 'Unnamed Client' }}</h1>
+                <span class="status-{{ client.status|lower if client.status else 'inactive' }}">
+                    {% if client.status and client.status|upper == 'ACTIVE' %}
+                        <i class="fas fa-circle"></i> Active
+                    {% else %}
+                        <i class="fas fa-circle"></i> Inactive
+                    {% endif %}
+                </span>
+            </div>
+
+        <div class="client-info">
+            <h3>Client Information</h3>
+            <div class="info-grid">
+                {% if client.client_id %}
+                <div class="info-item">
+                    <div class="info-label">Client ID</div>
+                    <div class="info-value">{{ client.client_id }}</div>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">{{ client.phone or 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ client.email or 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Address</div>
+                    <div class="info-value">{{ client.address or 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Balance</div>
+                    <div class="info-value">
+                        <span class="amount {% if client.balance >= 0 %}credit{% else %}debit{% endif %}">
+                            ₹{{ "%.2f"|format(client.balance) }}
+                        </span>
+                    </div>
+                </div>
+                {% if client.created_at %}
+                <div class="info-item">
+                    <div class="info-label">Account Created</div>
+                    <div class="info-value">
+                        {% if client.created_at is string %}
+                            {{ client.created_at }}
+                        {% else %}
+                            {{ client.created_at.strftime('%b %d, %Y') }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <h3>Transaction History</h3>
+        {% if transactions %}
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ transaction.description or 'No description' }}</td>
+                            <td>{{ transaction.transaction_type|title }}</td>
+                            <td class="amount {% if transaction.transaction_type == 'credit' %}credit{% else %}debit{% endif %}">
+                                ₹{{ "%.2f"|format(transaction.amount) }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-transactions">
+                <p>No transactions found for this client.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
