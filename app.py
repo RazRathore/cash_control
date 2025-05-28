@@ -224,7 +224,10 @@ expenses_db = []
 @app.route('/expenses')
 @login_required
 def expenses():
-    # Get the 10 most recent expenses
+    # Check if user is in Finance department
+    if current_user.department == 'Finance':
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('home'))
     recent_expenses = sorted(expenses_db, key=lambda x: x.get('date', ''), reverse=True)[:10]
     return render_template('expenses.html', recent_expenses=recent_expenses)
 

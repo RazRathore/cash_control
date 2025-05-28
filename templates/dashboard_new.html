@@ -287,11 +287,13 @@
                 <span class="badge">View and manage accounts</span>
             </a>
 
+            {% if current_user.department != 'Finance' %}
             <a href="{{ url_for('expenses') }}" class="dashboard-btn">
                 <i class="fas fa-receipt"></i>
                 Expenses
                 <span class="badge">Track and manage expenses</span>
             </a>
+            {% endif %}
         </div>
     </div>
     
