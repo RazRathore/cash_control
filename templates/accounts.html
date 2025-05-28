@@ -222,12 +222,16 @@
                             </span>
                             <input type="text" id="clientSearch" class="form-control border-start-0" 
                                    placeholder="Search clients by name, ID, phone, or email...">
+                            <button id="searchButton" class="btn btn-primary" type="button" title="Search">
+                                <i class="fas fa-search"></i>
+                            </button>
                             <button id="clearSearch" class="btn btn-outline-secondary" type="button" style="display: none;">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
                     <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                        <span id="searchResultsInfo" class="text-muted mb-2 d-block"></span>
                         <span id="clientCount" class="badge bg-primary">0 clients</span>
                     </div>
                 </div>
@@ -505,44 +509,49 @@
             let clientsData = [];
             let searchQuery = '';
 
-            // Initialize with default sort and load clients
-            document.addEventListener('DOMContentLoaded', function() {
-                // Initialize search functionality first
-                const searchInput = document.getElementById('clientSearch');
-                const clearSearchBtn = document.getElementById('clearSearch');
-                
-                // Search as you type with debounce
-                let searchTimeout;
-                searchInput.addEventListener('input', function(e) {
-                    searchQuery = e.target.value.toLowerCase().trim();
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        renderClients();
-                    }, 300);
-                    
-                    // Show/hide clear button
-                    clearSearchBtn.style.display = searchQuery ? 'block' : 'none';
-                });
-                
-                // Clear search
-                clearSearchBtn.addEventListener('click', function() {
-                    searchInput.value = '';
-                    searchQuery = '';
-                    this.style.display = 'none';
-                    renderClients();
-                });
-                
-                // Handle Enter key in search
-                searchInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        renderClients();
-                    }
-                });
-
-                // Load clients after setting up search
-                loadClients();
+            // Initialize search functionality
+            const searchInput = document.getElementById('clientSearch');
+            const clearSearchBtn = document.getElementById('clearSearch');
+            const searchButton = document.getElementById('searchButton');
+            const searchResultsInfo = document.getElementById('searchResultsInfo');
+            
+            // Search button click handler
+            searchButton.addEventListener('click', function() {
+                searchQuery = searchInput.value.toLowerCase().trim();
+                renderClients();
             });
+
+            // Search input handler with debounce
+            let searchTimeout;
+            searchInput.addEventListener('input', function(e) {
+                searchQuery = e.target.value.toLowerCase().trim();
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    renderClients();
+                }, 300);
+                
+                // Show/hide clear button
+                clearSearchBtn.style.display = searchQuery ? 'block' : 'none';
+                
+                // Update search results info
+                if (searchQuery) {
+                    searchResultsInfo.textContent = `Searching for "${searchQuery}"...`;
+                } else {
+                    searchResultsInfo.textContent = '';
+                }
+            });
+            
+            // Clear search
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                searchQuery = '';
+                this.style.display = 'none';
+                searchResultsInfo.textContent = '';
+                renderClients();
+            });
+
+            // Load clients initially
+            loadClients();
 
             // Handle sort button clicks
             document.querySelectorAll('.sort-btn').forEach(btn => {
@@ -590,6 +599,13 @@
                 const tbody = document.getElementById('clientsTableBody');
                 tbody.innerHTML = '';
 
+                // Update search results info
+                if (searchQuery) {
+                    searchResultsInfo.textContent = `Found ${clientsData.length} results for "${searchQuery}"`;
+                } else {
+                    searchResultsInfo.textContent = '';
+                }
+
                 if (!clientsData || clientsData.length === 0) {
                     tbody.innerHTML = `
                         <tr>
@@ -614,6 +630,7 @@
                         <tr>
                             <td colspan="6" class="text-center">No clients found matching your search.</td>
                         </tr>`;
+                    searchResultsInfo.textContent = `No results found for "${searchQuery}"`;
                     return;
                 }
                 sortedClients.forEach(client => {

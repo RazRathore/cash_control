@@ -47,53 +47,84 @@ let currentFilters = {
 
 // Search functionality
 function initializeSearch() {
+    // Get DOM elements
     const searchInput = document.getElementById('clientSearch');
     const searchButton = document.getElementById('searchButton');
     const clearSearchButton = document.getElementById('clearSearch');
     const searchResultsInfo = document.getElementById('searchResultsInfo');
 
-    // Handle search button click
-    searchButton.addEventListener('click', () => {
-        currentFilters.search = searchInput.value.trim();
-        currentPage = 1; // Reset to first page when searching
-        updateSearchInfo();
-        loadClients();
-    });
+    // Event handlers
+    searchButton.addEventListener('click', handleSearchClick);
+    searchInput.addEventListener('input', handleSearchInput);
+    clearSearchButton.addEventListener('click', handleClearSearch);
+    searchInput.addEventListener('keypress', handleEnterKey);
 
-    // Handle Enter key in search input
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            currentFilters.search = searchInput.value.trim();
+    // Event handler functions
+    function handleSearchClick() {
+        const query = searchInput.value.trim();
+        if (query) {
+            // Search across multiple fields
+            currentFilters.search = query;
             currentPage = 1;
             updateSearchInfo();
             loadClients();
         }
-    });
+    }
 
-    // Handle clear search
-    clearSearchButton.addEventListener('click', () => {
+    function handleSearchInput(e) {
+        const query = e.target.value.trim();
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (query) {
+                currentFilters.search = query;
+                currentPage = 1;
+                updateSearchInfo();
+                loadClients();
+            }
+        }, 300);
+        
+        clearSearchButton.style.display = query ? 'block' : 'none';
+        updateSearchInfo();
+    }
+
+    function handleClearSearch() {
         searchInput.value = '';
         currentFilters.search = '';
+        clearSearchButton.style.display = 'none';
         currentPage = 1;
         updateSearchInfo();
         loadClients();
-    });
+    }
 
-    // Update search info text
-    function updateSearchInfo() {
-        if (!searchResultsInfo) return;
-        
-        if (currentFilters.search) {
-            searchResultsInfo.textContent = `Search results for: "${currentFilters.search}"`;
-            searchResultsInfo.classList.remove('text-muted');
-            searchResultsInfo.classList.add('text-primary', 'fw-bold');
-        } else {
-            searchResultsInfo.textContent = 'Showing all clients';
-            searchResultsInfo.classList.remove('text-primary', 'fw-bold');
-            searchResultsInfo.classList.add('text-muted');
+    function handleEnterKey(e) {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+                currentFilters.search = query;
+                currentPage = 1;
+                updateSearchInfo();
+                loadClients();
+            }
         }
     }
+
+    // Helper functions
+    function updateSearchInfo() {
+        const query = currentFilters.search;
+        searchResultsInfo.textContent = query 
+            ? `Searching for "${query}"...` 
+            : 'Showing all clients';
+    }
+
+    // Debounce timeout
+    let searchTimeout;
+
+    // Initialize search
+    updateSearchInfo();
 }
+
+// Initialize search functionality
+initializeSearch();
 
 // DOM Elements
 const clientsTableBody = document.getElementById('clientsTableBody');
@@ -608,6 +639,9 @@ function deleteClient(clientId) {
         showLoading(false);
     });
 }
+// Initialize search functionality
+initializeSearch();
+
 // Add event listener for the save client form
 document.addEventListener('DOMContentLoaded', function() {
     const clientForm = document.getElementById('clientForm');

@@ -281,7 +281,8 @@ def get_clients():
                 (Client.name.ilike(search)) | 
                 (Client.email.ilike(search)) |
                 (Client.phone.ilike(search)) |
-                (Client.company.ilike(search))
+                (Client.client_id.ilike(search)) |
+                (Client.address.ilike(search))
             )
         
         # Apply sorting
