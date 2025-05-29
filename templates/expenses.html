@@ -140,13 +140,33 @@
 <body>
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">Expenses</h1>
+            <div>
+                <h1 class="page-title">Expenses</h1>
+                <div class="filter-controls" style="margin-top: 15px; display: flex; gap: 15px; align-items: center;">
+                    <div class="search-box" style="position: relative; flex: 1; max-width: 300px;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                        <input type="text" id="searchExpenses" placeholder="Search expenses..." style="width: 100%; padding: 8px 15px 8px 35px; border: 1px solid #ddd; border-radius: 20px; font-size: 14px; outline: none; transition: all 0.3s;">
+                    </div>
+                    <div class="date-filter" style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 14px; color: #495057;">From:</span>
+                        <input type="date" id="dateFrom" class="form-control" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        <span style="font-size: 14px; color: #495057;">To:</span>
+                        <input type="date" id="dateTo" class="form-control" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        <button id="applyDateFilter" class="btn" style="padding: 6px 15px; margin-left: 5px; background-color: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; transition: all 0.3s;">
+                            <i class="fas fa-filter"></i> Apply
+                        </button>
+                        <button id="clearFilters" class="btn" style="padding: 6px 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; transition: all 0.3s;">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
             <div class="header-actions">
                 <a href="{{ url_for('home') }}" class="btn btn-outline-secondary me-2">
                     <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
                 </a>
                 <a href="#" class="btn" id="addExpenseBtn">
-                <i class="fas fa-plus"></i> Add New Expense
+                    <i class="fas fa-plus"></i> Add New Expense
                 </a>
             </div>
         </div>
@@ -505,6 +525,111 @@
                     this.closest('.expense-item').remove();
                 });
             });
+        });
+
+        // Search and Filter Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchExpenses');
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const applyFilterBtn = document.getElementById('applyDateFilter');
+            const clearFiltersBtn = document.getElementById('clearFilters');
+            const expenseRows = document.querySelectorAll('.table-row:not(.table-header)');
+
+            // Set default date range to last 30 days
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            // Format dates as YYYY-MM-DD for date inputs
+            const formatDate = (date) => {
+                const d = new Date(date);
+                let month = '' + (d.getMonth() + 1);
+                let day = '' + d.getDate();
+                const year = d.getFullYear();
+
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+
+                return [year, month, day].join('-');
+            };
+
+            dateTo.value = formatDate(today);
+            dateFrom.value = formatDate(thirtyDaysAgo);
+
+            // Function to filter expenses
+            function filterExpenses() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const fromDate = dateFrom.value ? new Date(dateFrom.value) : null;
+                const toDate = dateTo.value ? new Date(dateTo.value) : null;
+
+                expenseRows.forEach(row => {
+                    if (row.classList.contains('no-expenses')) return;
+                    
+                    const dateCell = row.querySelector('div:nth-child(1)');
+                    const clientCell = row.querySelector('div:nth-child(2)');
+                    const descriptionCell = row.querySelector('.expense-summary');
+                    
+                    if (!dateCell || !clientCell || !descriptionCell) return;
+                    
+                    let rowDate;
+                    try {
+                        // Try to parse the date
+                        const dateStr = dateCell.textContent.trim();
+                        rowDate = new Date(dateStr);
+                        if (isNaN(rowDate.getTime())) {
+                            // If direct parsing fails, try with a different format
+                            const [day, month, year] = dateStr.split('/');
+                            rowDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing date:', e);
+                        rowDate = new Date(0); // Use epoch start as fallback
+                    }
+                    
+                    const clientName = clientCell.textContent.toLowerCase();
+                    const description = descriptionCell.textContent.toLowerCase();
+                    
+                    // Check date range
+                    const dateInRange = (!fromDate || rowDate >= new Date(fromDate.setHours(0, 0, 0, 0))) && 
+                                      (!toDate || rowDate <= new Date(new Date(toDate).setHours(23, 59, 59, 999)));
+                    
+                    // Check search term
+                    const matchesSearch = !searchTerm || 
+                                         clientName.includes(searchTerm) || 
+                                         description.includes(searchTerm);
+                    
+                    // Show/hide row based on filters
+                    if (dateInRange && matchesSearch) {
+                        row.style.display = 'grid';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+
+            // Event listeners
+            searchInput.addEventListener('input', filterExpenses);
+            applyFilterBtn.addEventListener('click', filterExpenses);
+            
+            // Handle Enter key in search
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    filterExpenses();
+                }
+            });
+
+            // Clear all filters
+            clearFiltersBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                dateTo.value = formatDate(new Date());
+                dateFrom.value = formatDate(thirtyDaysAgo);
+                filterExpenses();
+            });
+
+            // Initial filter
+            filterExpenses();
         });
     </script>
 </body>
