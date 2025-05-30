@@ -17,6 +17,6 @@ def remove_user(username):
             return False
 
 if __name__ == '__main__':
-    # Remove the manager user
-    remove_user('manager')
+    # Remove the test user
+    remove_user('testuser')
     print("User removal process completed.")

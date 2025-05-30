@@ -514,13 +514,15 @@ function viewClient(clientId) {
             if (data.success) {
                 // Populate the view modal with client data
                 const client = data.data;
-                document.getElementById('clientDetailsName').textContent = client.name;
-                document.getElementById('clientDetailsId').textContent = client.client_id;
-                document.getElementById('clientDetailsType').textContent = client.client_type;
-                document.getElementById('clientDetailsEmail').textContent = client.email || 'N/A';
-                document.getElementById('clientDetailsPhone').textContent = client.phone || 'N/A';
-                document.getElementById('clientDetailsAddress').textContent = client.address || 'N/A';
-                document.getElementById('clientDetailsBalance').textContent = formatCurrency(client.balance || 0);
+                document.getElementById('clientDetailsName').textContent = client.name || 'N/A';
+                document.getElementById('clientDetailsQueryLicense').textContent = client.query_license || 'N/A';
+                document.getElementById('clientDetailsMiningLease').textContent = client.mining_lease_no || 'N/A';
+                document.getElementById('clientDetailsMobile').textContent = client.mobile_no || 'N/A';
+                document.getElementById('clientDetailsVillage').textContent = client.near_village || 'N/A';
+                document.getElementById('clientDetailsTehsil').textContent = client.tehsil || 'N/A';
+                document.getElementById('clientDetailsDistrict').textContent = client.district || 'N/A';
+                document.getElementById('clientDetailsState').textContent = client.state || 'N/A';
+                document.getElementById('clientDetailsCountry').textContent = client.country || 'N/A';
                 document.getElementById('clientDetailsStatus').textContent = client.status || 'Active';
                 
                 // Show the modal
@@ -558,13 +560,16 @@ function editClient(clientId) {
                 form.dataset.editMode = 'true';
                 form.dataset.clientId = clientId;
                 
-                // Set form values
-                document.getElementById('clientType').value = client.client_type || 'Individual';
+                // Set form values for the new fields
                 document.getElementById('clientName').value = client.name || '';
-                document.getElementById('contactNumber').value = client.phone || '';
-                document.getElementById('email').value = client.email || '';
-                document.getElementById('address').value = client.address || '';
-                document.getElementById('initialBalance').value = parseFloat(client.balance || 0).toFixed(2);
+                document.getElementById('queryLicense').value = client.query_license || '';
+                document.getElementById('miningLeaseNo').value = client.mining_lease_no || '';
+                document.getElementById('mobileNo').value = client.mobile_no || '';
+                document.getElementById('nearVillage').value = client.near_village || '';
+                document.getElementById('tehsil').value = client.tehsil || '';
+                document.getElementById('district').value = client.district || 'Jodhpur';
+                document.getElementById('state').value = client.state || 'Rajasthan';
+                document.getElementById('country').value = client.country || 'India';
                 
                 // Update modal title and button text
                 document.getElementById('addClientModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Client';
@@ -654,11 +659,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const formData = {
                 name: document.getElementById('clientName').value.trim(),
-                client_type: document.getElementById('clientType').value,
-                phone: document.getElementById('contactNumber').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                address: document.getElementById('address').value.trim(),
-                balance: parseFloat(document.getElementById('initialBalance').value) || 0
+                query_license: document.getElementById('queryLicense').value.trim(),
+                mining_lease_no: document.getElementById('miningLeaseNo').value.trim(),
+                mobile_no: document.getElementById('mobileNo').value.trim(),
+                near_village: document.getElementById('nearVillage').value.trim(),
+                tehsil: document.getElementById('tehsil').value.trim(),
+                district: document.getElementById('district').value.trim(),
+                state: document.getElementById('state').value.trim(),
+                country: document.getElementById('country').value.trim()
             };
             
             // Basic validation

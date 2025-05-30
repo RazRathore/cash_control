@@ -601,83 +601,92 @@
 
     <!-- Add Client Modal -->
     <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="min-height: 80vh;">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="addClientModalLabel">
                         <i class="fas fa-user-plus me-2"></i>Add New Client
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="clientForm">
-                        <ul class="nav nav-tabs mb-4" id="clientTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">Basic Info</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="address-tab" data-bs-toggle="tab" data-bs-target="#address-info" type="button" role="tab">Address</button>
-                            </li>
-                        </ul>
-                        
-                        <div class="tab-content" id="clientTabsContent">
-                            <!-- Basic Info Tab -->
-                            <div class="tab-pane fade show active" id="basic-info" role="tabpanel">
-                                <div class="mb-3">
-                                    <label for="clientName" class="form-label">Client Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="clientName" name="name" required>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="clientEmail" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="clientEmail" name="email">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="clientPhone" class="form-label">Phone</label>
-                                        <input type="tel" class="form-control" id="clientPhone" name="phone">
-                                    </div>
-                                </div>
+                <div class="modal-body p-4">
+                    <form id="clientForm" class="needs-validation" novalidate>
+                        <div class="row g-3">
+                            <!-- Client Name -->
+                            <div class="col-md-6">
+                                <label for="clientName" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="clientName" name="name">
                             </div>
                             
-                            <!-- Address Tab -->
-                            <div class="tab-pane fade" id="address-info" role="tabpanel">
-                                <div class="mb-3">
-                                    <label for="addressLine1" class="form-label">Address Line 1</label>
-                                    <input type="text" class="form-control" id="addressLine1" name="address_line1">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="addressLine2" class="form-label">Address Line 2</label>
-                                    <input type="text" class="form-control" id="addressLine2" name="address_line2">
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="city" class="form-label">City</label>
-                                        <input type="text" class="form-control" id="city" name="city">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="state" class="form-label">State</label>
-                                        <input type="text" class="form-control" id="state" name="state">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="postalCode" class="form-label">Postal Code</label>
-                                        <input type="text" class="form-control" id="postalCode" name="postal_code">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="country" class="form-label">Country</label>
-                                        <input type="text" class="form-control" id="country" name="country" value="India">
-                                    </div>
-                                </div>
+                            <!-- Query License -->
+                            <div class="col-md-6">
+                                <label for="queryLicense" class="form-label">QL (Query Licence)</label>
+                                <input type="text" class="form-control" id="queryLicense" name="query_license">
+                            </div>
+                            
+                            <!-- Mining Lease No. -->
+                            <div class="col-md-6">
+                                <label for="miningLeaseNo" class="form-label">M.L. No. (Mining Lease)</label>
+                                <input type="text" class="form-control" id="miningLeaseNo" name="mining_lease_no">
+                            </div>
+                            
+                            <!-- Mobile No. -->
+                            <div class="col-md-6">
+                                <label for="mobileNo" class="form-label">Mobile No.</label>
+                                <input type="tel" class="form-control" id="mobileNo" name="mobile_no">
+                            </div>
+                            
+                            <!-- Near Village -->
+                            <div class="col-md-6">
+                                <label for="nearVillage" class="form-label">Near Village</label>
+                                <input type="text" class="form-control" id="nearVillage" name="near_village">
+                            </div>
+                            
+                            <!-- Tehsil -->
+                            <div class="col-md-6">
+                                <label for="tehsil" class="form-label">Tehsil</label>
+                                <input type="text" class="form-control" id="tehsil" name="tehsil">
+                            </div>
+                            
+                            <!-- District -->
+                            <div class="col-md-6">
+                                <label for="district" class="form-label">District</label>
+                                <input type="text" class="form-control" id="district" name="district" value="Jodhpur">
+                            </div>
+                            
+                            <!-- State -->
+                            <div class="col-md-6">
+                                <label for="state" class="form-label">State</label>
+                                <input type="text" class="form-control" id="state" name="state" value="Rajasthan">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <!-- <label for="clientEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="clientEmail" name="email"> -->
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <!-- <label for="clientPhone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="clientPhone" name="phone"> -->
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- <div class="col-md-6 mb-3">
+                                <label for="postalCode" class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="postalCode" name="postal_code">
+                            </div> -->
+                            <div class="col-md-6 mb-3">
+                                <label for="country" class="form-label">Country</label>
+                                <input type="text" class="form-control" id="country" name="country" value="India">
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-1"></i> Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" id="saveClient">
+                    <button type="submit" class="btn btn-primary" id="saveClient">
                         <i class="fas fa-save me-1"></i> Save Client
                     </button>
                 </div>
@@ -687,32 +696,29 @@
 
     <!-- View/Edit Client Modal -->
     <div class="modal fade" id="clientDetailsModal" tabindex="-1" aria-labelledby="clientDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="clientDetailsModalLabel">
                         <i class="fas fa-user-edit me-2"></i>Client Details
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <p><strong>Name:</strong> <span id="clientDetailsName">-</span></p>
-                            <p><strong>Client ID:</strong> <span id="clientDetailsId">-</span></p>
-                            <p><strong>Email:</strong> <span id="clientDetailsEmail">-</span></p>
-                            <p><strong>Phone:</strong> <span id="clientDetailsPhone">-</span></p>
+                            <p><strong>QL (Query Licence):</strong> <span id="clientDetailsQueryLicense">-</span></p>
+                            <p><strong>M.L. No. (Mining Lease):</strong> <span id="clientDetailsMiningLease">-</span></p>
+                            <p><strong>Mobile No.:</strong> <span id="clientDetailsMobile">-</span></p>
+                            <p><strong>Near Village:</strong> <span id="clientDetailsVillage">-</span></p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Type:</strong> <span id="clientDetailsType">-</span></p>
+                            <p><strong>Tehsil:</strong> <span id="clientDetailsTehsil">-</span></p>
+                            <p><strong>District:</strong> <span id="clientDetailsDistrict">-</span></p>
+                            <p><strong>State:</strong> <span id="clientDetailsState">-</span></p>
+                            <p><strong>Country:</strong> <span id="clientDetailsCountry">-</span></p>
                             <p><strong>Status:</strong> <span id="clientDetailsStatus">-</span></p>
-                            <p><strong>Balance:</strong> <span id="clientDetailsBalance">-</span></p>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <p><strong>Address:</strong></p>
-                            <p id="clientDetailsAddress">-</p>
                         </div>
                     </div>
                 </div>
