@@ -98,6 +98,18 @@ class User(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
 
 
+# Association table for working stages
+class WorkingStage(db.Model):
+    __tablename__ = 'working_stages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     
@@ -105,12 +117,17 @@ class Transaction(db.Model):
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    total_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
+    token_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
     debit_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
     credit_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
-    balance = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
+    remaining_balance = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    working_stages = db.relationship('WorkingStage', backref='transaction', cascade='all, delete-orphan', lazy=True)
     
     client = db.relationship('Client', backref='transactions')
     

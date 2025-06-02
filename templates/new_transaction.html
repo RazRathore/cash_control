@@ -136,8 +136,35 @@
         }
 
         .btn-back {
-            background: #6c757d;
-            margin-right: 10px;
+            background-color: #6c757d;
+            margin-left: 10px;
+        }
+        
+        .stage-row {
+            margin-bottom: 10px;
+        }
+        
+        input[readonly] {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .stage-row {
+            margin-bottom: 10px;
+        }
+        
+        input[readonly] {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        .stage-row {
+            margin-bottom: 10px;
+        }
+        
+        input[readonly] {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
         }
 
         .form-row {
@@ -204,13 +231,40 @@
             </div>
 
             <div class="form-group">
-                <label for="description">Additional Details (Optional)</label>
-                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Add any additional information about this transaction"></textarea>
+                <label for="total_amount">Total Amount (₹) <span style="color: red;">*</span></label>
+                <input type="number" class="form-control" id="total_amount" name="total_amount" min="0" step="0.01" placeholder="Enter total amount" required onchange="calculateRemaining()">
             </div>
 
             <div class="form-group">
-                <label for="credit_amount">Amount (₹)</label>
-                <input type="number" class="form-control" id="credit_amount" name="credit_amount" min="0" step="1" placeholder="Enter amount" required>
+                <label for="token_amount">Token Amount (₹) <span style="color: red;">*</span></label>
+                <input type="number" class="form-control" id="token_amount" name="token_amount" min="0" step="0.01" placeholder="Enter token amount" required onchange="calculateRemaining()">
+            </div>
+
+            <div class="form-group">
+                <label>Working Stages</label>
+                <div id="stages_container">
+                    <div class="stage-row" style="display: flex; margin-bottom: 10px; gap: 10px;">
+                        <input type="text" name="stage_descriptions[]" class="form-control" placeholder="Stage description" style="flex: 2;">
+                        <input type="number" name="stage_amounts[]" class="form-control stage-amount" min="0" step="0.01" placeholder="Amount" onchange="calculateRemaining()" style="flex: 1;">
+                        <button type="button" class="btn btn-danger" onclick="removeStage(this)" style="padding: 0 10px;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addStage()" style="margin-top: 5px;"><i class="fas fa-plus"></i> Add Stage</button>
+            </div>
+
+            <div class="form-group">
+                <label for="total_credits">Total Credits (₹)</label>
+                <input type="number" class="form-control" id="total_credits" name="total_credits" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="remaining_balance">Remaining Balance (₹)</label>
+                <input type="number" class="form-control" id="remaining_balance" name="remaining_balance" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Additional Notes (Optional)</label>
+                <textarea class="form-control" id="description" name="description" rows="2" placeholder="Add any additional information about this transaction"></textarea>
             </div>
 
             <div class="form-group">
@@ -225,6 +279,56 @@
     </div>
 
     <script>
+        // Functions for handling working stages
+        function addStage() {
+            const container = document.getElementById('stages_container');
+            const stageDiv = document.createElement('div');
+            stageDiv.className = 'stage-row';
+            stageDiv.style.display = 'flex';
+            stageDiv.style.marginBottom = '10px';
+            stageDiv.style.gap = '10px';
+            stageDiv.innerHTML = `
+                <input type="text" name="stage_descriptions[]" class="form-control" placeholder="Stage description" style="flex: 2;">
+                <input type="number" name="stage_amounts[]" class="form-control stage-amount" min="0" step="0.01" placeholder="Amount" onchange="calculateRemaining()" style="flex: 1;">
+                <button type="button" class="btn btn-danger" onclick="removeStage(this)" style="padding: 0 10px;"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(stageDiv);
+        }
+
+        function removeStage(button) {
+            button.closest('.stage-row').remove();
+            calculateRemaining();
+        }
+
+        function calculateRemaining() {
+            const totalAmount = parseFloat(document.getElementById('total_amount').value) || 0;
+            const tokenAmount = parseFloat(document.getElementById('token_amount').value) || 0;
+            
+            // Calculate sum of all stage amounts
+            let stagesTotal = 0;
+            document.querySelectorAll('.stage-amount').forEach(input => {
+                stagesTotal += parseFloat(input.value) || 0;
+            });
+
+            // Calculate remaining balance
+            const remaining = totalAmount - tokenAmount - stagesTotal;
+            
+            // Update the display
+            document.getElementById('total_credits').value = (tokenAmount + stagesTotal).toFixed(2);
+            document.getElementById('remaining_balance').value = remaining.toFixed(2);
+            
+            // Highlight if remaining balance is negative
+            const remainingInput = document.getElementById('remaining_balance');
+            if (remaining < 0) {
+                remainingInput.style.borderColor = '#dc3545';
+                remainingInput.style.backgroundColor = '#fff8f8';
+            } else {
+                remainingInput.style.borderColor = '#ced4da';
+                remainingInput.style.backgroundColor = '';
+            }
+        }
+
+
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('client_search');
             const clientIdInput = document.getElementById('client_id');

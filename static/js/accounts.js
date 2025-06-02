@@ -37,8 +37,8 @@ function showToast(message, type = 'info') {
 
 // State
 let currentPage = 1;
-let sortBy = 'id';
-let sortOrder = 'asc';
+let sortBy = 'created_at';
+let sortOrder = 'desc';
 let currentFilters = {
     status: '',
     type: '',
@@ -225,9 +225,14 @@ function renderClients(clients) {
     }
 
     clientsTableBody.innerHTML = clients.map(client => {
+        // Format date if available, otherwise use current date
+        const formattedDate = client.created_at ? 
+            new Date(client.created_at).toLocaleDateString('en-GB') : 
+            new Date().toLocaleDateString('en-GB');
+            
         return `
         <tr data-client-id="${client.id}">
-            <td>${client.client_id || 'N/A'}</td>
+            <td>${formattedDate}</td>
             <td>
                 <div class="d-flex align-items-center">
                     <div class="me-2">
@@ -236,8 +241,8 @@ function renderClients(clients) {
                     <div class="fw-bold">${escapeHtml(client.name || 'Unnamed Client')}</div>
                 </div>
             </td>
-            <td>${client.phone || 'N/A'}</td>
-            <td>${client.email || 'N/A'}</td>
+            <td>${client.query_licence || 'N/A'}</td>
+            <td>${client.mining_lease || 'N/A'}</td>
             <td class="text-end">
                 <div class="btn-group btn-group-sm">
                     <button class="btn btn-sm btn-outline-primary view-client" 
@@ -644,6 +649,7 @@ function deleteClient(clientId) {
         showLoading(false);
     });
 }
+
 // Initialize search functionality
 initializeSearch();
 

@@ -479,8 +479,10 @@
                         <tr>
                             <th>Date</th>
                             <th>Client</th>
-                            <th>Description</th>
-                            <th>Credit</th>
+                            <th>Total Amount</th>
+                            <th>Total Credits</th>
+                            <th>Remaining</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -503,13 +505,54 @@
                                         <span style="color: #6c757d;">-</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ transaction.description or '-' }}</td>
-                                <td class="{% if transaction.credit_amount > 0 %}credit-amount{% else %}text-muted{% endif %}">
-                                    <div class="amount-cell">
-                                        {% if transaction.credit_amount > 0 %}
-                                            ₹{{ "{0:,}".format(transaction.credit_amount // 100) }}
-                                        {% else %}
-                                            -
+                                <td>₹{{ "{0:,.2f}".format(transaction.total_amount / 100) if transaction.total_amount else '0.00' }}</td>
+                                <td>₹{{ "{0:,.2f}".format(transaction.total_credits / 100) if transaction.total_credits else '0.00' }}</td>
+                                <td class="{% if transaction.remaining_balance < 0 %}text-danger{% endif %}">
+                                    ₹{{ "{0:,.2f}".format(transaction.remaining_balance / 100) if transaction.remaining_balance is not none else '0.00' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group" aria-label="Transaction actions">
+                                        <a href="{{ url_for('edit_transaction', transaction_id=transaction.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-secondary show-more-btn" data-transaction-id="{{ transaction.id }}" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Details Row -->
+                            <tr class="details-row" id="details-{{ transaction.id }}" style="display: none;">
+                                <td colspan="6" style="background-color: #f8f9fa; padding: 15px;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Transaction Details</h6>
+                                            <p class="mb-1"><strong>Description:</strong> {{ transaction.description or 'N/A' }}</p>
+                                            <p class="mb-1"><strong>Token Amount:</strong> ₹{{ "{0:,.2f}".format(transaction.token_amount / 100) if transaction.token_amount else '0.00' }}</p>
+                                            <p class="mb-1"><strong>Created:</strong> {{ transaction.created_at.strftime('%d %b %Y %I:%M %p') }}</p>
+                                        </div>
+                                        {% if transaction.working_stages %}
+                                        <div class="col-md-6">
+                                            <h6>Working Stages</h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Description</th>
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for stage in transaction.working_stages %}
+                                                        <tr>
+                                                            <td>{{ stage.description }}</td>
+                                                            <td>₹{{ "{0:,.2f}".format(stage.amount / 100) }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -599,13 +642,79 @@
                 window.location.href = url.toString();
             }
             </script>
+            
+            <script>
+                // Handle Show More button clicks
+                document.addEventListener('DOMContentLoaded', function() {
+                    const showMoreButtons = document.querySelectorAll('.show-more-btn');
+                    
+                    // Function to update button state
+                    function updateButtonState(button, isActive) {
+                        const icon = button.querySelector('i');
+                        if (isActive) {
+                            icon.className = 'fas fa-eye-slash';
+                            button.title = 'Hide Details';
+                            button.classList.remove('btn-outline-secondary');
+                            button.classList.add('btn-primary');
+                        } else {
+                            icon.className = 'fas fa-eye';
+                            button.title = 'View Details';
+                            button.classList.remove('btn-primary');
+                            button.classList.add('btn-outline-secondary');
+                        }
+                    }
+                    
+                    // Initialize all buttons
+                    showMoreButtons.forEach(button => {
+                        const transactionId = button.getAttribute('data-transaction-id');
+                        const detailsRow = document.getElementById(`details-${transactionId}`);
+                        if (detailsRow) {
+                            detailsRow.style.display = 'none';
+                            updateButtonState(button, false);
+                        }
+                    });
+                    
+                    // Add click event listeners
+                    showMoreButtons.forEach(button => {
+                        button.addEventListener('click', function() {
+                            const transactionId = this.getAttribute('data-transaction-id');
+                            const detailsRow = document.getElementById(`details-${transactionId}`);
+                            const isVisible = detailsRow.style.display === 'table-row';
+                            
+                            // Hide all other open details
+                            document.querySelectorAll('.details-row').forEach(row => {
+                                if (row.id !== `details-${transactionId}`) {
+                                    row.style.display = 'none';
+                                    const btn = document.querySelector(`.show-more-btn[data-transaction-id="${row.id.split('-')[1]}"]`);
+                                    if (btn) {
+                                        updateButtonState(btn, false);
+                                    }
+                                }
+                            });
+                            
+                            // Toggle current row
+                            if (isVisible) {
+                                detailsRow.style.display = 'none';
+                                updateButtonState(this, false);
+                            } else {
+                                detailsRow.style.display = 'table-row';
+                                updateButtonState(this, true);
+                            }
+                        });
+                    });
+                });
+            </script>
         {% else %}
             <div class="no-transactions">
-                <i class="fas fa-exchange-alt"></i>
-                <h3>No transactions found</h3>
-                <p>Get started by adding your first transaction</p>
-                <a href="{{ url_for('new_transaction') }}" class="btn">
-                    <i class="fas fa-plus"></i> Add Transaction
+                <div class="form-group">
+                <button type="submit" class="btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{{ url_for('transactions') }}" class="btn btn-back">
+                    <i class="fas fa-sync-alt"></i> Reset
+                </a>
+                <a href="{{ url_for('new_transaction') }}" class="btn" style="background-color: var(--secondary-color);">
+                    <i class="fas fa-plus"></i> New Transaction
                 </a>
             </div>
         {% endif %}

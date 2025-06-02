@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from extensions import db
-from models import User, Client, Transaction
+from models import User, Client, Transaction, WorkingStage
 import pytz
 
 # Load environment variables
@@ -128,10 +128,17 @@ def transactions():
     paginated_transactions = query.order_by(Transaction.date.desc(), Transaction.id.desc())\
                                 .paginate(page=page, per_page=per_page, error_out=False)
     
-    # Add balances to the paginated transactions
+    # Add balances and working stages to the paginated transactions
     transactions = []
     for transaction in paginated_transactions.items:
         transaction.balance = transaction_balances.get(transaction.id, 0)
+        # Calculate total credits (token_amount + sum of working stages)
+        total_credits = transaction.token_amount
+        working_stages = WorkingStage.query.filter_by(transaction_id=transaction.id).all()
+        for stage in working_stages:
+            total_credits += stage.amount
+        transaction.total_credits = total_credits
+        transaction.working_stages = working_stages
         transactions.append(transaction)
     
     # Get unique clients for the filter dropdown
@@ -150,6 +157,95 @@ def transactions():
                          end_date=end_date_str if end_date_str else '',
                          pytz=pytz)
 
+@app.route('/transactions/<int:transaction_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_transaction(transaction_id):
+    transaction = Transaction.query.get_or_404(transaction_id)
+    clients = Client.query.order_by(Client.name).all()
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            client_id = request.form.get('client_id')
+            
+            # Validate required fields
+            if not client_id:
+                flash('Client is required', 'danger')
+                return render_template('edit_transaction.html', 
+                                    transaction=transaction, 
+                                    clients=clients,
+                                    today=datetime.utcnow().date())
+            
+            # Get client for the transaction
+            client = Client.query.get_or_404(client_id)
+            
+            # Process amounts (convert to paise)
+            total_amount = int(float(request.form.get('total_amount', 0) or 0) * 100)
+            token_amount = int(float(request.form.get('token_amount', 0) or 0) * 100)
+            
+            # Get working stages data
+            stage_descriptions = request.form.getlist('stage_descriptions[]')
+            stage_amounts = request.form.getlist('stage_amounts[]')
+            
+            # Calculate total stages amount
+            stages_total = sum(int(float(amt) * 100) for amt in stage_amounts if amt)
+            
+            # Calculate remaining balance
+            remaining_balance = total_amount - token_amount - stages_total
+            
+            # Update transaction
+            transaction.client_id = client_id
+            transaction.name = f"Transaction for {client.name}"
+            transaction.description = request.form.get('description', '')
+            transaction.total_amount = total_amount
+            transaction.token_amount = token_amount
+            transaction.remaining_balance = remaining_balance
+            
+            # Delete existing working stages
+            WorkingStage.query.filter_by(transaction_id=transaction.id).delete()
+            
+            # Add new working stages
+            for desc, amt in zip(stage_descriptions, stage_amounts):
+                if desc and amt:
+                    stage = WorkingStage(
+                        description=desc.strip(),
+                        amount=int(float(amt) * 100),
+                        transaction_id=transaction.id,
+                        created_at=datetime.utcnow(),
+                        updated_at=datetime.utcnow()
+                    )
+                    db.session.add(stage)
+            
+            # Update client balance (if client changed)
+            if transaction.client_id != int(client_id):
+                # Remove token amount from old client's balance
+                old_client = Client.query.get(transaction.client_id)
+                if old_client:
+                    old_client.balance = (old_client.balance or 0) - transaction.token_amount
+                
+                # Add token amount to new client's balance
+                client.balance = (client.balance or 0) + token_amount
+            
+            db.session.commit()
+            flash('Transaction updated successfully!', 'success')
+            return redirect(url_for('transactions'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating transaction: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
+    
+    # Convert working stages to a list of dicts for the template
+    working_stages = [{'description': ws.description, 'amount': ws.amount} 
+                     for ws in transaction.working_stages]
+    
+    return render_template('edit_transaction.html', 
+                         transaction=transaction, 
+                         clients=clients,
+                         working_stages=working_stages,
+                         today=datetime.utcnow().date())
+
 @app.route('/transactions/new', methods=['GET', 'POST'])
 @login_required
 def new_transaction():
@@ -158,7 +254,6 @@ def new_transaction():
     if request.method == 'POST':
         try:
             # Get form data
-            date_str = request.form.get('date')
             client_id = request.form.get('client_id')
             
             # Validate required fields
@@ -173,28 +268,47 @@ def new_transaction():
             # Get client for the transaction
             client = Client.query.get_or_404(client_id)
             
-            # Convert amounts to integers (storing in paise)
-            debit_amount = int(float(request.form.get('debit_amount', 0) or 0)) * 100
-            credit_amount = int(float(request.form.get('credit_amount', 0) or 0)) * 100
+            # Process amounts (convert to paise)
+            total_amount = int(float(request.form.get('total_amount', 0) or 0) * 100)
+            token_amount = int(float(request.form.get('token_amount', 0) or 0) * 100)
             
-            # Create transaction with current timestamp
+            # Get working stages data
+            stage_descriptions = request.form.getlist('stage_descriptions[]')
+            stage_amounts = request.form.getlist('stage_amounts[]')
+            
+            # Calculate total stages amount
+            stages_total = sum(int(float(amt) * 100) for amt in stage_amounts if amt)
+            
+            # Calculate remaining balance
+            remaining_balance = total_amount - token_amount - stages_total
+            
+            # Create transaction
             transaction = Transaction(
-                date=current_time,  # Using current timestamp for the transaction
+                date=current_time,
                 name=f"Transaction for {client.name}",
                 description=request.form.get('description', ''),
-                debit_amount=debit_amount,
-                credit_amount=credit_amount,
+                total_amount=total_amount,
+                token_amount=token_amount,
+                remaining_balance=remaining_balance,
                 client_id=client_id,
                 created_at=current_time,
                 updated_at=current_time
             )
             
-            # Calculate balance for the client (in paise)
-            client_balance = client.balance or 0
-            transaction.balance = client_balance + credit_amount - debit_amount
+            # Add working stages
+            for desc, amt in zip(stage_descriptions, stage_amounts):
+                if desc and amt:  # Only add if both description and amount are provided
+                    stage = WorkingStage(
+                        description=desc.strip(),
+                        amount=int(float(amt) * 100),
+                        transaction=transaction,
+                        created_at=current_time,
+                        updated_at=current_time
+                    )
+                    db.session.add(stage)
             
-            # Update client's balance
-            client.balance = transaction.balance
+            # Update client's balance (add the token amount to their balance)
+            client.balance = (client.balance or 0) + token_amount
             
             db.session.add(transaction)
             db.session.commit()
@@ -205,6 +319,8 @@ def new_transaction():
         except Exception as e:
             db.session.rollback()
             flash(f'Error adding transaction: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
     
     return render_template('new_transaction.html', clients=clients, today=datetime.utcnow().date())
 
