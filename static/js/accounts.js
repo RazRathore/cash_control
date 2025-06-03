@@ -241,8 +241,8 @@ function renderClients(clients) {
                     <div class="fw-bold">${escapeHtml(client.name || 'Unnamed Client')}</div>
                 </div>
             </td>
-            <td>${client.query_licence || 'N/A'}</td>
-            <td>${client.mining_lease || 'N/A'}</td>
+            <td>${client.query_license || 'N/A'}</td>
+            <td>${client.mining_lease_no || 'N/A'}</td>
             <td class="text-end">
                 <div class="btn-group btn-group-sm">
                     <button class="btn btn-sm btn-outline-primary view-client" 
@@ -277,30 +277,48 @@ function renderClients(clients) {
     attachClientActionHandlers();
 }
 
-// Attach event handlers for client actions
+// Attach event handlers for client actions using event delegation
 function attachClientActionHandlers() {
-    // View client details
-    document.querySelectorAll('.view-client').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const clientId = e.target.closest('button').dataset.clientId;
-            viewClient(clientId);
-        });
-    });
-
-    // Edit client
-    document.querySelectorAll('.edit-client').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const clientId = e.target.closest('button').dataset.clientId;
-            editClient(clientId);
-        });
-    });
-
-    // Delete client
-    document.querySelectorAll('.delete-client').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const clientId = e.target.closest('button').dataset.clientId;
-            confirmDeleteClient(clientId);
-        });
+    // Use event delegation for view client buttons
+    document.addEventListener('click', (e) => {
+        // Handle view client button
+        const viewBtn = e.target.closest('.view-client');
+        if (viewBtn) {
+            e.preventDefault();
+            const clientId = viewBtn.dataset.clientId;
+            if (clientId) {
+                viewClient(clientId);
+            } else {
+                console.error('No client ID found on view button');
+            }
+            return;
+        }
+        
+        // Handle edit client button
+        const editBtn = e.target.closest('.edit-client');
+        if (editBtn) {
+            e.preventDefault();
+            const clientId = editBtn.dataset.clientId;
+            if (clientId) {
+                editClient(clientId);
+            } else {
+                console.error('No client ID found on edit button');
+            }
+            return;
+        }
+        
+        // Handle delete client button
+        const deleteBtn = e.target.closest('.delete-client');
+        if (deleteBtn) {
+            e.preventDefault();
+            const clientId = deleteBtn.dataset.clientId;
+            if (clientId) {
+                confirmDeleteClient(clientId);
+            } else {
+                console.error('No client ID found on delete button');
+            }
+            return;
+        }
     });
 }
 
@@ -505,41 +523,86 @@ function getTotalPages() {
 
 // Client actions
 function viewClient(clientId) {
+    console.log('Viewing client with ID:', clientId);
+    
     if (!clientId) {
-        console.error('No client ID provided');
+        const errorMsg = 'No client ID provided';
+        console.error(errorMsg);
+        showToast(errorMsg, 'error');
         return;
+    }
+
+    // Show loading state
+    const viewBtn = document.querySelector(`.view-client[data-client-id="${clientId}"]`);
+    if (viewBtn) {
+        const originalHtml = viewBtn.innerHTML;
+        viewBtn.disabled = true;
+        viewBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
     }
 
     fetch(`${API_BASE_URL}/clients/${clientId}`)
         .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch client details');
+            if (!response.ok) {
+                return response.json().then(errData => {
+                    // If we can parse the error response, use its message
+                    throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    // If we can't parse the error response, use a generic message
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
             return response.json();
         })
         .then(data => {
-            if (data.success) {
-                // Populate the view modal with client data
+            if (data && data.success && data.data) {
                 const client = data.data;
-                document.getElementById('clientDetailsName').textContent = client.name || 'N/A';
-                document.getElementById('clientDetailsQueryLicense').textContent = client.query_license || 'N/A';
-                document.getElementById('clientDetailsMiningLease').textContent = client.mining_lease_no || 'N/A';
-                document.getElementById('clientDetailsMobile').textContent = client.mobile_no || 'N/A';
-                document.getElementById('clientDetailsVillage').textContent = client.near_village || 'N/A';
-                document.getElementById('clientDetailsTehsil').textContent = client.tehsil || 'N/A';
-                document.getElementById('clientDetailsDistrict').textContent = client.district || 'N/A';
-                document.getElementById('clientDetailsState').textContent = client.state || 'N/A';
-                document.getElementById('clientDetailsCountry').textContent = client.country || 'N/A';
-                document.getElementById('clientDetailsStatus').textContent = client.status || 'Active';
+                console.log('Client data received:', client);
+                
+                // Helper function to safely set text content
+                const setTextContent = (id, value) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value || 'N/A';
+                    } else {
+                        console.warn(`Element with ID '${id}' not found`);
+                    }
+                };
+
+                // Populate the view modal with client data
+                setTextContent('clientDetailsName', client.name);
+                setTextContent('clientDetailsQueryLicense', client.query_license);
+                setTextContent('clientDetailsMiningLease', client.mining_lease_no);
+                setTextContent('clientDetailsMobile', client.phone);
+                setTextContent('clientDetailsVillage', client.near_village);
+                setTextContent('clientDetailscity', client.city);
+                setTextContent('clientDetailsDistrict', client.district);
+                setTextContent('clientDetailsState', client.state);
+                setTextContent('clientDetailsCountry', client.country);
+                setTextContent('clientDetailsStatus', client.status || 'Active');
                 
                 // Show the modal
-                const modal = new bootstrap.Modal(document.getElementById('clientDetailsModal'));
-                modal.show();
+                const modalElement = document.getElementById('clientDetailsModal');
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                } else {
+                    console.error('Client details modal element not found');
+                    showToast('Error: Could not open client details', 'error');
+                }
             } else {
-                throw new Error(data.error || 'Failed to load client details');
+                throw new Error(data?.error || 'Invalid response format from server');
             }
         })
         .catch(error => {
             console.error('Error fetching client:', error);
-            showToast('Error loading client details', 'error');
+            showToast(`Error: ${error.message || 'Failed to load client details'}`, 'error');
+        })
+        .finally(() => {
+            // Reset button state
+            if (viewBtn) {
+                viewBtn.disabled = false;
+                viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
         });
 }
 
@@ -569,9 +632,9 @@ function editClient(clientId) {
                 document.getElementById('clientName').value = client.name || '';
                 document.getElementById('queryLicense').value = client.query_license || '';
                 document.getElementById('miningLeaseNo').value = client.mining_lease_no || '';
-                document.getElementById('mobileNo').value = client.mobile_no || '';
+                document.getElementById('mobileNo').value = client.phone || '';
                 document.getElementById('nearVillage').value = client.near_village || '';
-                document.getElementById('tehsil').value = client.tehsil || '';
+                document.getElementById('city').value = client.city || '';
                 document.getElementById('district').value = client.district || 'Jodhpur';
                 document.getElementById('state').value = client.state || 'Rajasthan';
                 document.getElementById('country').value = client.country || 'India';
@@ -667,9 +730,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: document.getElementById('clientName').value.trim(),
                 query_license: document.getElementById('queryLicense').value.trim(),
                 mining_lease_no: document.getElementById('miningLeaseNo').value.trim(),
-                mobile_no: document.getElementById('mobileNo').value.trim(),
+                phone: document.getElementById('mobileNo').value.trim(),
                 near_village: document.getElementById('nearVillage').value.trim(),
-                tehsil: document.getElementById('tehsil').value.trim(),
+                city: document.getElementById('city').value.trim(),
                 district: document.getElementById('district').value.trim(),
                 state: document.getElementById('state').value.trim(),
                 country: document.getElementById('country').value.trim()

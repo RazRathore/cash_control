@@ -31,6 +31,10 @@ class Client(db.Model):
     state = db.Column(db.String(50), nullable=True)
     country = db.Column(db.String(50), nullable=True, default='India')
     postal_code = db.Column(db.String(20), nullable=True)
+    query_license = db.Column(db.String(50), nullable=True)
+    near_village = db.Column(db.String(50), nullable=True)
+    district = db.Column(db.String(50), nullable=True)
+    mining_lease_no = db.Column(db.String(50), nullable=True)
     _status = db.Column('status', db.Enum('Active', 'Pending', 'Inactive', name='client_status'), default='Active')
     
     @property
@@ -64,6 +68,10 @@ class Client(db.Model):
             'state': self.state,
             'country': self.country,
             'postal_code': self.postal_code,
+            'query_license': self.query_license,
+            'near_village': self.near_village,
+            'district': self.district,
+            'mining_lease_no': self.mining_lease_no,
             'status': self.status,
             'balance': float(self.balance) if self.balance is not None else 0.00,
             'notes': self.notes,

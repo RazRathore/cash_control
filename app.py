@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, Markup
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import login_user, login_required, logout_user, current_user
+from flask_migrate import Migrate
 import os
 import re
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
-from flask_migrate import Migrate
-from extensions import db
+from extensions import db, login_manager, init_extensions
 from models import User, Client, Transaction, WorkingStage
 import pytz
 
@@ -18,11 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mining_ledger.db?check_same_t
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-db.init_app(app)
-migrate = Migrate(app, db)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
+app = init_extensions(app)
 
 # Custom template filter
 @app.template_filter('cascade_css')
@@ -401,7 +397,15 @@ def get_clients():
                 (Client.email.ilike(search)) |
                 (Client.phone.ilike(search)) |
                 (Client.client_id.ilike(search)) |
-                (Client.address.ilike(search))
+                (Client.address.ilike(search)) |
+                (Client.near_village.ilike(search)) |
+                (Client.district.ilike(search)) |
+                (Client.client_type.ilike(search)) |
+                (Client.mining_lease_no.ilike(search)) |
+                (Client.city.ilike(search)) |
+                (Client.state.ilike(search)) |
+                (Client.country.ilike(search)) |
+                (Client.postal_code.ilike(search))
             )
         
         # Apply sorting
@@ -414,7 +418,7 @@ def get_clients():
         # Execute paginated query
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         clients = [client.to_dict() for client in pagination.items]
-        
+        print(clients)
         # Prepare response
         response = {
             'success': True,
@@ -455,7 +459,19 @@ def search_clients():
         'id': client.id,
         'name': client.name,
         'phone': client.phone or '',
-        'email': client.email or ''
+        'email': client.email or '',
+        'query_license': client.query_license,
+        'near_village': client.near_village,
+        'district': client.district,
+        'mining_lease_no': client.mining_lease_no,
+        'city': client.city,
+        'state': client.state,
+        'country': client.country,
+        'postal_code': client.postal_code,
+        'status': client.status or 'Active',
+        'balance': float(client.balance or 0),
+        'created_at': client.created_at.isoformat() if client.created_at else None,
+        'updated_at': client.updated_at.isoformat() if client.updated_at else None
     } for client in clients])
 
 @app.route('/api/clients/<int:client_id>', methods=['GET'])
@@ -474,7 +490,16 @@ def get_client(client_id):
             'address': client.address,
             'client_type': client.client_type or 'Individual',
             'status': client.status or 'Active',
-            'balance': float(client.balance or 0),
+            'query_license': client.query_license,
+            'mining_lease_no': client.mining_lease_no,
+            'near_village': client.near_village,
+            'district': client.district,
+            'city': client.city,
+            'state': client.state,
+            'country': client.country or 'India',
+            'postal_code': client.postal_code,
+            'balance': float(client.balance or 0) if client.balance is not None else 0.0,
+            'notes': client.notes,
             'created_at': client.created_at.isoformat() if client.created_at else None,
             'updated_at': client.updated_at.isoformat() if client.updated_at else None
         }
@@ -493,6 +518,8 @@ def create_client():
             
         # Create new client
         client = Client()
+        print('adding new client.')
+        print(data)
         client.client_id = Client.generate_client_id(data.get('client_type', 'Individual'))
         client.name = data['name']
         client.client_type = data.get('client_type', 'Individual')
@@ -506,7 +533,13 @@ def create_client():
         client.status = data.get('status', 'Active')
         client.balance = float(data.get('balance', 0.00))
         client.notes = data.get('notes')
-        
+        client.query_license = data.get('query_license')
+        client.mining_lease_no = data.get('mining_lease_no')
+        client.near_village = data.get('near_village')
+        client.city = data.get('city')
+        client.district = data.get('district')
+        client.state = data.get('state')
+        client.country = data.get('country')
         db.session.add(client)
         db.session.commit()
         
@@ -555,6 +588,20 @@ def update_client(client_id):
                 pass  # Keep existing balance if invalid
         if 'notes' in data:
             client.notes = data['notes']
+        if 'query_license' in data:
+            client.query_license = data['query_license']
+        if 'mining_lease_no' in data:
+            client.mining_lease_no = data['mining_lease_no']
+        if 'near_village' in data:
+            client.near_village = data['near_village']
+        if 'city' in data:
+            client.city = data['city']
+        if 'district' in data:
+            client.district = data['district']
+        if 'state' in data:
+            client.state = data['state']
+        if 'country' in data:
+            client.country = data['country']
             
         client.updated_at = datetime.utcnow()
         db.session.commit()
@@ -584,7 +631,9 @@ def delete_client(client_id):
         app.logger.error(f"Error deleting client {client_id}: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete client'}), 500
 
-# Initialize database
+from models import User
+
+# Create database tables
 def init_db():
     with app.app_context():
         # Create all database tables
@@ -600,51 +649,14 @@ def init_db():
             )
             admin.set_password('admin123')
             db.session.add(admin)
-            
-            # Add sample clients
-            clients = [
-                {
-                    'name': 'Jodhpur Mining Corp',
-                    'email': 'contact@jodhpurnining.com',
-                    'phone': '+911234567890',
-                    'address': '123 Mining Street, Jodhpur, Rajasthan',
-                    'company': 'Jodhpur Mining Corp',
-                    'status': 'active',
-                    'balance': 50000.00,
-                    'credit_limit': 100000.00,
-                    'notes': 'Premium client with high credit limit'
-                },
-                {
-                    'name': 'Rajesh Sharma',
-                    'email': 'rajesh.sharma@example.com',
-                    'phone': '+919876543210',
-                    'address': '456 Gem Colony, Jodhpur, Rajasthan',
-                    'company': 'Sharma Gems',
-                    'status': 'active',
-                    'balance': 25000.50,
-                    'credit_limit': 50000.00,
-                    'notes': 'Regular customer'
-                },
-                {
-                    'name': 'Meera Devi',
-                    'email': 'meera.devi@example.com',
-                    'phone': '+919988776655',
-                    'address': '789 Silver Street, Jodhpur, Rajasthan',
-                    'company': 'Meera Jewelers',
-                    'status': 'inactive',
-                    'balance': 0.00,
-                    'credit_limit': 25000.00,
-                    'notes': 'Inactive account - follow up required'
-                }
-            ]
-            
-            for client_data in clients:
-                client = Client(**client_data)
-                db.session.add(client)
-            
             db.session.commit()
-            print('Database initialized with admin user and sample data.')
+            print("Created admin user")
 
+# Add this at the bottom of app.py
 if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+    # Initialize the database
+    with app.app_context():
+        init_db()
+    # Run the app
+    print("Starting Flask development server...")
+    app.run(debug=True, host='0.0.0.0', port=5000)

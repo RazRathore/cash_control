@@ -484,6 +484,8 @@
                             document.getElementById('detail-phone').textContent = client.phone || '-';
                             document.getElementById('detail-email').textContent = client.email || '-';
                             document.getElementById('detail-address').textContent = client.address || '-';
+                            document.getElementById('detail-query-license').textContent = client.query_license || '-';
+                            document.getElementById('detail-mining-lease-no').textContent = client.mining_lease_no || '-';
                             document.getElementById('detail-location').textContent = 
                                 [client.city, client.state].filter(Boolean).join(', ') || '-';
                             document.getElementById('detail-balance').textContent = formattedBalance;
