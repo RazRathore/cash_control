@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, abort, Markup
 from flask_login import login_user, login_required, logout_user, current_user
+from functools import wraps
 from flask_migrate import Migrate
 import os
 import re
@@ -9,12 +10,29 @@ from extensions import db, login_manager, init_extensions
 from models import User, Client, Transaction, WorkingStage
 import pytz
 
+def role_required(*roles):
+    """Decorator to check if user has required role(s)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+            if current_user.role not in roles and 'admin' not in roles:
+                flash('You do not have permission to access this page.', 'error')
+                return redirect(url_for('home'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mining_ledger.db?check_same_thread=False&timeout=30'
+# Use absolute path for database to ensure it's created in the correct location
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "mining_ledger.db")}?check_same_thread=False&timeout=30'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
@@ -335,11 +353,8 @@ expenses_db = []
 
 @app.route('/expenses')
 @login_required
+@role_required('admin', 'accountant')
 def expenses():
-    # Check if user is in Finance department
-    if current_user.department == 'Finance':
-        flash('You do not have permission to access this page.', 'error')
-        return redirect(url_for('home'))
     recent_expenses = sorted(expenses_db, key=lambda x: x.get('date', ''), reverse=True)[:10]
     return render_template('expenses.html', recent_expenses=recent_expenses)
 
@@ -639,18 +654,35 @@ def init_db():
         # Create all database tables
         db.create_all()
         
-        # Check if admin user exists, if not create one
+        # Create admin user if not exists
         admin = User.query.filter_by(username='admin').first()
         if not admin:
             admin = User(
                 username='admin',
                 name='Administrator',
-                department='Administration'
+                department='Administration',
+                role='admin'  # Add admin role
             )
             admin.set_password('admin123')
             db.session.add(admin)
-            db.session.commit()
             print("Created admin user")
+        
+        # Create staff user if not exists
+        staff = User.query.filter_by(username='staff').first()
+        if not staff:
+            staff = User(
+                username='staff',
+                name='Staff Member',
+                department='Operations',
+                role='user'  # Regular user role with restricted access
+            )
+            staff.set_password('staff123')
+            db.session.add(staff)
+            print("Created staff user")
+        
+        # Commit changes
+        db.session.commit()
+        print("Database initialization complete")
 
 # Add this at the bottom of app.py
 if __name__ == '__main__':
