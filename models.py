@@ -143,22 +143,26 @@ class WorkingStage(db.Model):
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     
+    # Transaction types
+    TYPE_CLIENT = 'client'
+    TYPE_VENDOR = 'vendor'
+    
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    total_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
-    token_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
-    debit_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
-    credit_amount = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
-    remaining_balance = db.Column(db.Integer, default=0)  # Storing in paise (1/100 of a rupee)
+    total_amount = db.Column(db.Integer, default=0)  # in paise
+    token_amount = db.Column(db.Integer, default=0)   # in paise
+    debit_amount = db.Column(db.Integer, default=0)   # in paise
+    credit_amount = db.Column(db.Integer, default=0)  # in paise
+    remaining_balance = db.Column(db.Integer, default=0)  # in paise
+    transaction_type = db.Column(db.String(20), default=TYPE_CLIENT, nullable=False)  # 'client' or 'vendor'
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     working_stages = db.relationship('WorkingStage', backref='transaction', cascade='all, delete-orphan', lazy=True)
-    
     client = db.relationship('Client', backref='transactions')
     
     def to_dict(self):

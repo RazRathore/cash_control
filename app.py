@@ -38,6 +38,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize extensions
 app = init_extensions(app)
 
+# Session configuration
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+app.config['REMEMBER_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(hours=1)
+
 # Custom template filter
 @app.template_filter('cascade_css')
 def cascade_css(value):
@@ -82,6 +91,98 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/vendor-transactions')
+@login_required
+def vendor_transactions():
+    from datetime import datetime, timedelta, timezone
+    import pytz
+    
+    # Get filter parameters
+    client_id = request.args.get('client_id', type=int)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    # Set transaction type to filter only vendor transactions
+    transaction_type = 'vendor'
+    
+    # Initialize query with vendor filter
+    query = Transaction.query.filter(Transaction.transaction_type == transaction_type)
+    
+    # Apply client filter if selected
+    if client_id:
+        query = query.filter(Transaction.client_id == client_id)
+    
+    # Parse and apply date filters
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            query = query.filter(Transaction.date >= start_date)
+            
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() + timedelta(days=1)
+            query = query.filter(Transaction.date < end_date)
+    except ValueError as e:
+        print(f"Error parsing dates: {e}")
+        # Continue with unfiltered query if there's a date parsing error
+    
+    # Get total count for pagination
+    total_transactions = query.count()
+    
+    # Apply pagination
+    transactions_pagination = query.order_by(Transaction.date.desc(), Transaction.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Get all transactions up to the current page to calculate running balance per client
+    all_transactions_query = query.order_by(Transaction.client_id, Transaction.date.asc(), Transaction.id.asc())
+    all_transactions = all_transactions_query.all()
+    
+    # Calculate running balance per client
+    client_balances = {}
+    transaction_balances = {}
+    
+    for transaction in all_transactions:
+        client_id = transaction.client_id
+        if client_id not in client_balances:
+            client_balances[client_id] = 0
+        
+        # Update the balance for this client
+        client_balances[client_id] += (transaction.credit_amount - transaction.debit_amount)
+        transaction_balances[transaction.id] = client_balances[client_id]
+    
+    # Get the paginated transactions in the correct order (newest first)
+    paginated_transactions = query.order_by(Transaction.date.desc(), Transaction.id.desc())\
+                                .paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Add balances and working stages to the paginated transactions
+    transactions = []
+    for transaction in paginated_transactions.items:
+        transaction.balance = transaction_balances.get(transaction.id, 0)
+        # Calculate total credits (token_amount + sum of working stages)
+        total_credits = transaction.token_amount
+        working_stages = WorkingStage.query.filter_by(transaction_id=transaction.id).all()
+        for stage in working_stages:
+            total_credits += stage.amount
+        transaction.total_credits = total_credits
+        transaction.working_stages = working_stages
+        transactions.append(transaction)
+    
+    # Get unique clients for the filter dropdown
+    clients = Client.query.order_by(Client.name).all()
+    
+    # Debug: Print the generated SQL query
+    print(f"Vendor Transactions SQL Query: {query.statement}")
+    print(f"Found {len(transactions)} vendor transactions")
+    
+    return render_template('vendor_transactions.html', 
+                         transactions=transactions, 
+                         transactions_pagination=transactions_pagination,
+                         clients=clients,
+                         selected_client_id=str(client_id) if client_id else None,
+                         start_date=start_date_str if start_date_str else '',
+                         end_date=end_date_str if end_date_str else '',
+                         pytz=pytz)
+
 @app.route('/transactions')
 @login_required
 def transactions():
@@ -95,8 +196,11 @@ def transactions():
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
-    # Initialize query
-    query = db.session.query(Transaction)
+    # Set transaction type to filter only client transactions
+    transaction_type = 'client'
+    
+    # Initialize query with client filter
+    query = Transaction.query.filter(Transaction.transaction_type == transaction_type)
     
     # Apply client filter if selected
     if client_id:
@@ -263,6 +367,7 @@ def edit_transaction(transaction_id):
 @app.route('/transactions/new', methods=['GET', 'POST'])
 @login_required
 def new_transaction():
+    transaction_type = request.args.get('transaction_type', 'client')  # Default to client if not specified
     clients = Client.query.order_by(Client.name).all()
     
     if request.method == 'POST':
@@ -273,7 +378,10 @@ def new_transaction():
             # Validate required fields
             if not client_id:
                 flash('Client is required', 'danger')
-                return render_template('new_transaction.html', clients=clients, today=datetime.utcnow().date())
+                return render_template('new_transaction.html', 
+                                    clients=clients, 
+                                    today=datetime.utcnow().date(),
+                                    transaction_type=transaction_type)
             
             # Get current time in IST
             ist = pytz.timezone('Asia/Kolkata')
@@ -305,6 +413,7 @@ def new_transaction():
                 token_amount=token_amount,
                 remaining_balance=remaining_balance,
                 client_id=client_id,
+                transaction_type=transaction_type,  # Set transaction type
                 created_at=current_time,
                 updated_at=current_time
             )
@@ -328,6 +437,9 @@ def new_transaction():
             db.session.commit()
             
             flash('Transaction added successfully!', 'success')
+            # Redirect to the appropriate transactions page based on type
+            if transaction_type == 'vendor':
+                return redirect(url_for('vendor_transactions'))
             return redirect(url_for('transactions'))
             
         except Exception as e:
